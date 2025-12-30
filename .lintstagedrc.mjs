@@ -1,6 +1,6 @@
 export default {
     // TypeScript 文件：针对每个包运行类型检查和格式化
-    'packages/@affectjs/**/*.{ts,tsx}': (filenames) => {
+    "packages/@affectjs/**/*.{ts,tsx}": (filenames) => {
         // 提取包名
         const packages = new Set();
         filenames.forEach((file) => {
@@ -16,17 +16,30 @@ export default {
             commands.push(`pnpm --filter @affectjs/${pkg} type-check`);
         });
         // 格式化所有暂存的文件
-        commands.push('pnpm exec prettier --write');
+        if (filenames.length > 0) {
+            commands.push(`pnpm exec prettier --write ${filenames.join(" ")}`);
+        }
 
         return commands;
     },
     // JavaScript 文件：格式化
-    '**/*.{js,jsx}': ['pnpm exec prettier --write'],
+    "**/*.{js,jsx}": (filenames) => {
+        if (filenames.length === 0) return [];
+        return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    },
     // JSON 文件：格式化
-    '**/*.json': ['pnpm exec prettier --write'],
+    "**/*.json": (filenames) => {
+        if (filenames.length === 0) return [];
+        return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    },
     // Markdown 文件：格式化
-    '**/*.md': ['pnpm exec prettier --write'],
+    "**/*.md": (filenames) => {
+        if (filenames.length === 0) return [];
+        return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    },
     // YAML 文件：格式化
-    '**/*.{yml,yaml}': ['pnpm exec prettier --write'],
+    "**/*.{yml,yaml}": (filenames) => {
+        if (filenames.length === 0) return [];
+        return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    },
 };
-
