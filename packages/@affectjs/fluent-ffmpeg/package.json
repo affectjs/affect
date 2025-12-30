@@ -25,6 +25,7 @@
     "@affectjs/cli": "workspace:*",
     "jsdoc": "^4.0.0",
     "mocha": "^10.0.0",
+    "nyc": "^15.1.0",
     "should": "^13.0.0"
   },
   "dependencies": {

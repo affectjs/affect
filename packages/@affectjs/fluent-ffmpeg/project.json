@@ -18,6 +18,13 @@
         "cwd": "{projectRoot}"
       }
     },
+    "coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nyc report --reporter=lcov",
+        "cwd": "{projectRoot}"
+      }
+    },
     "doc": {
       "executor": "nx:run-commands",
       "options": {
