@@ -5,7 +5,13 @@
       "Bash(npx nx build:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm install:*)",
+      "Bash(git push)",
+      "Bash(pnpm test:*)",
+      "Bash(npx nx test:*)",
+      "Bash(npx nx run-many:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

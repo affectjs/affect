@@ -6,6 +6,10 @@ import dts from "vite-plugin-dts";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
+  plugins: [dts({
+    outDir: 'dist',
+    rollupTypes: true,
+  })],
   build: {
     lib: {
       entry: resolve(__dirname, "src/cli.ts"),
