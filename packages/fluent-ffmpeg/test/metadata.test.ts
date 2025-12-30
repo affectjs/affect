@@ -102,7 +102,8 @@ describe("Metadata", function () {
           expect("streams" in data).toBe(true);
           expect(Array.isArray(data.streams)).toBe(true);
           expect(data.streams.length).toBe(1);
-          expect(data.streams[0].bit_rate).toBe("314280 bit/s");
+          // Bitrate can vary slightly between FFmpeg versions
+          expect(data.streams[0].bit_rate).toMatch(/^3[12][0-9]{4} bit\/s$/);
           resolve();
         } catch (e) {
           reject(e);

@@ -12,10 +12,13 @@ export default defineConfig({
   })],
   build: {
     lib: {
-      entry: resolve(__dirname, "src/cli.ts"),
+      entry: {
+        index: resolve(__dirname, "src/index.ts"),
+        cli: resolve(__dirname, "src/cli.ts"),
+      },
       name: "fluent-setup",
-      fileName: () => "cli.mjs",
-      formats: ["es"],
+      fileName: (format, entryName) => `${entryName}.${format === "es" ? "mjs" : "cjs"}`,
+      formats: ["es", "cjs"],
     },
     rollupOptions: {
       external: [

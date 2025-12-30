@@ -28,5 +28,6 @@ export default defineConfig({
         "os",
       ],
     },
+    sourcemap: true,
   },
 });
