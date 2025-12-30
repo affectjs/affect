@@ -15,7 +15,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@affectjs/fluent-ffmpeg": resolve(__dirname, "../../@affectjs/fluent-ffmpeg/index.js"),
+      "@affectjs/fluent-ffmpeg": resolve(__dirname, "../../@affectjs/fluent-ffmpeg"),
     },
   },
   test: {
