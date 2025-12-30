@@ -48,7 +48,7 @@
     }
   },
   "scripts": {
-    "test": ". scripts/setup-env.sh && NODE_ENV=test $(pnpm bin)/nyc mocha --require should --reporter spec",
+    "test": ". scripts/setup-env.sh && NODE_ENV=test npx nyc mocha --require should --reporter spec",
     "coverage": "nyc report --reporter=lcov",
     "doc": "jsdoc --configure tools/jsdoc-conf.json",
     "setup": "pnpm exec fluent-setup setup",
