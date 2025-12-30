@@ -1,31 +1,31 @@
 {
-    "name": "fluent-ffmpeg-cli",
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "sourceRoot": "packages/fluent-ffmpeg-cli",
-    "projectType": "library",
-    "targets": {
-        "build": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "pnpm build",
-                "cwd": "{projectRoot}"
-            },
-            "outputs": ["{projectRoot}/dist"]
-        },
-        "type-check": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "pnpm type-check",
-                "cwd": "{projectRoot}"
-            }
-        },
-        "clean": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "pnpm clean",
-                "cwd": "{projectRoot}"
-            }
-        }
+  "name": "@affectjs/fluent-setup",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/@affectjs/fluent-setup/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm build",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/dist"]
     },
-    "tags": ["cli", "tools"]
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm type-check",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm clean",
+        "cwd": "{projectRoot}"
+      }
+    }
+  },
+  "tags": ["cli", "tools"]
 }

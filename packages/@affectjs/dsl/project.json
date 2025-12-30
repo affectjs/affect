@@ -1,5 +1,6 @@
 {
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@affectjs/dsl",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/@affectjs/dsl/src",
   "projectType": "library",
   "targets": {
@@ -19,4 +20,3 @@
     }
   }
 }
-
