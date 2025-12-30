@@ -25,7 +25,6 @@
     "@affectjs/cli": "workspace:*",
     "jsdoc": "^4.0.0",
     "mocha": "^10.0.0",
-    "nyc": "^15.1.0",
     "should": "^13.0.0"
   },
   "dependencies": {
@@ -48,8 +47,7 @@
     }
   },
   "scripts": {
-    "test": ". scripts/setup-env.sh && NODE_ENV=test cd ../../.. && node node_modules/nyc/bin/nyc.js --cwd packages/@affectjs/fluent-ffmpeg node node_modules/mocha/bin/mocha --require should --reporter spec",
-    "coverage": "nyc report --reporter=lcov",
+    "test": ". scripts/setup-env.sh && NODE_ENV=test pnpm exec mocha --require should --reporter spec",
     "doc": "jsdoc --configure tools/jsdoc-conf.json",
     "setup": "pnpm exec fluent-setup setup",
     "prepare": "pnpm exec fluent-setup setup"

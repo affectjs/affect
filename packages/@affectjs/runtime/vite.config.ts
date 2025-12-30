@@ -14,7 +14,8 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {},
+    // 使用 pnpm workspace 的包解析机制，不需要 alias
+    // vitest 会通过 deps.inline 和正常的包解析找到 @affectjs/fluent-ffmpeg
   },
   test: {
     globals: true,
