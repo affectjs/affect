@@ -16,8 +16,11 @@ export default {
       commands.push(`pnpm --filter @affectjs/${pkg} type-check`);
     });
     // 格式化所有暂存的文件
+    // 显式传递文件名数组，确保 prettier 能正确处理所有文件（包括包含空格的文件名）
     if (filenames.length > 0) {
-      commands.push(`pnpm exec prettier --write ${filenames.join(" ")}`);
+      // 使用引号包裹每个文件名，以正确处理包含空格的文件名
+      const quotedFilenames = filenames.map((f) => `"${f}"`).join(" ");
+      commands.push(`pnpm exec prettier --write ${quotedFilenames}`);
     }
 
     return commands;
