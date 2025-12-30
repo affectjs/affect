@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist
+build
+.next
+out
+.nx
+
+# Generated files
+*.min.js
+*.min.css
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.husky
+
+# Documentation (generated)
+docs/api
+
+# Test assets
+**/test/assets/**
+**/test/**/*.jpg
+**/test/**/*.png
+**/test/**/*.mp4
+**/test/**/*.avi
+
+# Generated parsers
+**/parser.js
+

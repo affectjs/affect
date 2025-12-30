@@ -1,24 +1,32 @@
 {
-    "name": "affect",
-    "version": "0.0.0",
-    "private": true,
-    "description": "Monorepo for affect and related packages",
-    "license": "MIT",
-    "author": "Albert Li <albert_lee@hotmail.com>",
-    "engines": {
-        "node": ">=18",
-        "pnpm": ">=8"
-    },
-    "packageManager": "pnpm@8.15.0",
-    "scripts": {
-        "build": "nx run-many --target=build --all",
-        "test": "nx run-many --target=test --all",
-        "coverage": "nx run-many --target=coverage --all",
-        "doc": "nx run-many --target=doc --all",
-        "prepare": "nx run-many --target=prepare --all"
-    },
-    "devDependencies": {
-        "@vitest/coverage-v8": "^4.0.16",
-        "nx": "^20.0.0"
-    }
+  "name": "affect",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo for affect and related packages",
+  "license": "MIT",
+  "author": "Albert Li <albert_lee@hotmail.com>",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "build": "nx run-many --target=build --all",
+    "test": "nx run-many --target=test --all",
+    "coverage": "nx run-many --target=coverage --all",
+    "doc": "nx run-many --target=doc --all",
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "nx": "^20.0.0",
+    "prettier": "^3.7.4"
+  }
 }
