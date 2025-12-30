@@ -1,0 +1,59 @@
+{
+    "name": "@affectjs/dsl",
+    "version": "0.1.0",
+    "description": "@affectjs/dsl - Unified media processing DSL (video/audio/image) using Peggy",
+    "keywords": [
+        "ffmpeg",
+        "dsl",
+        "parser",
+        "peggy",
+        "compiler"
+    ],
+    "author": "Albert Li <albert_lee@hotmail.com>",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18"
+    },
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.mjs"
+            },
+            "require": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist",
+        "src/grammar.pegjs"
+    ],
+    "scripts": {
+        "build": "pnpm generate-parser && vite build",
+        "dev": "vite build --watch",
+        "type-check": "tsc --noEmit",
+        "clean": "rm -rf dist src/parser.js",
+        "generate-parser": "peggy --format es src/grammar.pegjs -o src/parser.js",
+        "test": "vitest run",
+        "coverage": "vitest run --coverage",
+        "lint": "eslint . --ext .ts",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+        "postinstall": "pnpm generate-parser"
+    },
+    "dependencies": {
+        "peggy": "^3.0.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@vitest/ui": "^4.0.16",
+        "typescript": "^5.3.0",
+        "vite": "^5.1.0",
+        "vitest": "^4.0.16"
+    }
+}

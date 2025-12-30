@@ -1,0 +1,21 @@
+# Output files
+examples/*.avi
+examples/*.mp4
+examples/*.flv
+examples/*.m4v
+examples/*.m3u8
+examples/merged-output.mp4
+examples/output.*
+examples/thumbnails/
+
+# Test assets (optional - uncomment if you don't want to commit test videos)
+# examples/assets/*.avi
+# examples/assets/*.mpg
+# examples/assets/*.flv
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+

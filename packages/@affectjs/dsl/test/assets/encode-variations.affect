@@ -1,0 +1,7 @@
+affect video "input.mp4" "output.mp4" {
+  encode h264 2000
+  encode h264 "high"
+  encode aac 128
+  encode mp3
+}
+

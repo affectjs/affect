@@ -1,0 +1,23 @@
+{
+    "name": "affect",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Monorepo for affect and related packages",
+    "license": "MIT",
+    "author": "Albert Li <albert_lee@hotmail.com>",
+    "engines": {
+        "node": ">=18",
+        "pnpm": ">=8"
+    },
+    "packageManager": "pnpm@8.15.0",
+    "scripts": {
+        "build": "nx run-many --target=build --all",
+        "test": "nx run-many --target=test --all",
+        "coverage": "nx run-many --target=coverage --all",
+        "doc": "nx run-many --target=doc --all",
+        "prepare": "nx run-many --target=prepare --all"
+    },
+    "devDependencies": {
+        "nx": "^20.0.0"
+    }
+}

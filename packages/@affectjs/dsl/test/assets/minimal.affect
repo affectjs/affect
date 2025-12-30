@@ -1,0 +1,4 @@
+affect auto $input $output {
+  resize 1280 720
+}
+

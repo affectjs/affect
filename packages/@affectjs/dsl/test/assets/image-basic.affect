@@ -1,0 +1,5 @@
+affect image "input.jpg" "output.jpg" {
+  resize 1920 1080
+  filter grayscale
+}
+

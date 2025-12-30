@@ -1,0 +1,21 @@
+*.project
+node_modules
+.nyc_output
+*.swp
+.idea
+*.iml
+coverage
+
+# Nx
+.nx/cache
+.nx/workspace-data
+
+# pnpm
+.pnpm-store
+
+# Build outputs
+dist
+build
+
+# Generated documentation (kept at root level)
+# Note: docs/ is intentionally kept at root level, not ignored

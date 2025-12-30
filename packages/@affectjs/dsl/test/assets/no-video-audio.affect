@@ -1,0 +1,5 @@
+affect video "input.mp4" "output.mp3" {
+  no video
+  encode mp3 192
+}
+

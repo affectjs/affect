@@ -1,0 +1,6 @@
+affect video "input.mp4" "output.mp4" {
+  no audio
+  resize 1280 720
+  encode h264 2000
+}
+

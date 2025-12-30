@@ -1,0 +1,8 @@
+affect video "input.mp4" "output.mp4" {
+  resize 1280 720
+  on start "console.log('Starting')"
+  on end "console.log('Finished')"
+  on error "console.error('Error')"
+  on progress "console.log('Progress')"
+}
+

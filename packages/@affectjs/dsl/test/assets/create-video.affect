@@ -1,0 +1,29 @@
+affect auto $input $output {
+  resize 1280 720
+  encode h264 2000
+  encode aac 128
+  
+  video {
+    codec "libx264"
+    bitrate "1M"
+    fps 30
+  }
+  
+  audio {
+    codec "aac"
+    bitrate 128
+    channels 2
+    frequency 44100
+  }
+  
+  filter {
+    blur 5
+    brightness 1.1
+  }
+  
+  crop center auto 640 480
+  rotate 90
+  timeout 300
+  format "mp4"
+}
+

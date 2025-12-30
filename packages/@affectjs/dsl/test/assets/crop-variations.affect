@@ -1,0 +1,6 @@
+affect video "input.mp4" "output.mp4" {
+  crop 0 0 640 480
+  crop center auto 640 480
+  crop "center" 640 480
+}
+

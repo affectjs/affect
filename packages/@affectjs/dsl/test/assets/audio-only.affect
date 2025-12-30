@@ -1,0 +1,10 @@
+affect audio "input.wav" "output.mp3" {
+  encode mp3 192
+  audio {
+    codec "libmp3lame"
+    bitrate 192
+    channels 2
+    frequency 44100
+  }
+}
+

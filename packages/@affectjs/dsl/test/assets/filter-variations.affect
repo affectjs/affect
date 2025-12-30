@@ -1,0 +1,3 @@
+affect video "input.mp4" "output.mp4" {
+  filter grayscale
+}

@@ -1,0 +1,5 @@
+affect video "input.mp4" "output.mp4" {
+  video filter "drawtext=text=Hello:x=10:y=10"
+  resize 1280 720
+}
+

@@ -1,0 +1,27 @@
+affect video "input.mp4" "output.mp4" {
+  resize 1280 720
+  
+  video {
+    codec "libx264"
+    bitrate "1M"
+    fps 30
+  }
+  
+  audio {
+    codec "aac"
+    bitrate 128
+    channels 2
+    frequency 44100
+  }
+  
+  filter {
+    blur 5
+    brightness 1.1
+  }
+  
+  crop center auto 640 480
+  rotate 90 "horizontal"
+  timeout 300
+  format "mp4"
+}
+

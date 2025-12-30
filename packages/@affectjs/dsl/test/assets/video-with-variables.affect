@@ -1,0 +1,5 @@
+affect video $input $output {
+  resize 1920 1080
+  encode h264 3000
+}
+

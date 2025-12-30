@@ -1,0 +1,25 @@
+{
+    "name": "@luban-ws/fluent-ffmpeg-examples",
+    "version": "6.1.1",
+    "description": "Example scripts demonstrating fluent-ffmpeg usage",
+    "keywords": [
+        "ffmpeg",
+        "examples",
+        "demo"
+    ],
+    "author": "Albert Li <albert_lee@hotmail.com.com>",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18",
+        "bun": ">=1.0.0"
+    },
+    "type": "commonjs",
+    "dependencies": {
+        "@luban-ws/fluent-ffmpeg": "workspace:*",
+        "express": "^4.18.0",
+        "ora": "^8.2.0"
+    },
+    "scripts": {
+        "preview": "bun run examples/web-ui-server.js"
+    }
+}

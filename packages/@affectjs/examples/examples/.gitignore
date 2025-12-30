@@ -1,0 +1,11 @@
+# 上传和输出文件
+uploads/
+outputs/
+*.mp4
+*.avi
+*.mkv
+*.webm
+*.flv
+*.mov
+thumbnails/
+

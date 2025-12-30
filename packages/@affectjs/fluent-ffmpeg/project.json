@@ -1,0 +1,44 @@
+{
+    "name": "fluent-ffmpeg",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/fluent-ffmpeg",
+    "projectType": "library",
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "echo 'No build step needed for JavaScript library'",
+                "cwd": "{projectRoot}"
+            }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": ". scripts/setup-env.sh && NODE_ENV=test nyc mocha --require should --reporter spec",
+                "cwd": "{projectRoot}"
+            }
+        },
+        "coverage": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "nyc report --reporter=lcov",
+                "cwd": "{projectRoot}"
+            }
+        },
+        "doc": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "jsdoc --configure tools/jsdoc-conf.json --destination ../../docs",
+                "cwd": "{projectRoot}"
+            }
+        },
+        "setup": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "fluent-ffmpeg-cli setup",
+                "cwd": "{projectRoot}"
+            }
+        }
+    },
+    "tags": []
+}

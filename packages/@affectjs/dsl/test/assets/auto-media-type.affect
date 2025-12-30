@@ -1,0 +1,5 @@
+affect auto $input $output {
+  resize 1280 720
+  encode h264 2000
+}
+
