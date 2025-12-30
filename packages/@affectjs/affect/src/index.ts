@@ -1,15 +1,7 @@
 /**
- * @affectjs/affect - Unified Media Processing Runtime
- *
- * Main entry point for the runtime engine
+ * Main entry point for AffectJS CLI
+ * Re-exports CLI functionality
  */
 
-export { affect, execute, affectBatch } from './runtime';
-export type {
-    MediaType,
-    Operation,
-    Result,
-    RuntimeOptions,
-    ProgressInfo,
-} from './types';
-
+// Re-export DSL utilities if needed
+export * from "./dsl";

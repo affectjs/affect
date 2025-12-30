@@ -1,7 +1,8 @@
 # RFC-004: @affectjs/dsl - 统一媒体处理 DSL（视频/音频/图像）
 
-**状态**: In Progress  
+**状态**: ✅ Completed  
 **日期**: 2024-12-29  
+**完成日期**: 2025-12-29  
 **作者**: Albert Li  
 **相关问题**: 定义统一的媒体处理 DSL，可被 AI 理解和使用
 
@@ -663,7 +664,7 @@ await execute({ input: 'video.mp4', output: 'output.mp4' });
 
 ## 实现计划
 
-### 阶段 1: 核心语法（当前）
+### 阶段 1: 核心语法 ✅ 已完成
 - ✅ 基础语法定义（使用 `affect` 关键词）
 - ✅ Peggy 解析器
 - ✅ AST 结构
@@ -679,9 +680,11 @@ await execute({ input: 'video.mp4', output: 'output.mp4' });
 - ✅ **条件逻辑（if/else）**：支持比较操作、逻辑操作、属性访问
 
 ### 阶段 2: 后端适配器
-- ⏳ fluent-ffmpeg 适配器
-- ⏳ sharp 适配器
-- ⏳ 统一操作映射
+- ✅ fluent-ffmpeg 适配器（在 @affectjs/affect 中实现）
+- ✅ sharp 适配器（在 @affectjs/affect 中实现）
+- ✅ 统一操作映射（在 @affectjs/affect 中实现）
+
+**说明**: 后端适配器在 @affectjs/affect 运行时包中实现，DSL 编译器已能正确生成调用运行时 API 的代码。
 
 ### 阶段 3: AI 增强
 - ⏳ 语义验证
@@ -750,3 +753,4 @@ await execute({ input: 'video.mp4', output: 'output.mp4' });
   - 修复 crop 命令 y 值为 0 时被解析为 null 的问题
   - 修复 filter block 中多个命令的解析问题
   - 修复比较操作符解析顺序（>=, <= 优先于 >, <）
+

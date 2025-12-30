@@ -1,21 +1,31 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "sourceRoot": "packages/@affectjs/affect/src",
+    "name": "fluent-ffmpeg-cli",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/fluent-ffmpeg-cli",
     "projectType": "library",
     "targets": {
         "build": {
-            "executor": "@nx/vite:build",
-            "outputs": ["{options.outputPath}"],
+            "executor": "nx:run-commands",
             "options": {
-                "outputPath": "packages/@affectjs/affect/dist"
-            }
+                "command": "pnpm build",
+                "cwd": "{projectRoot}"
+            },
+            "outputs": ["{projectRoot}/dist"]
         },
         "type-check": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "tsc --noEmit",
-                "cwd": "packages/@affectjs/affect"
+                "command": "pnpm type-check",
+                "cwd": "{projectRoot}"
+            }
+        },
+        "clean": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "pnpm clean",
+                "cwd": "{projectRoot}"
             }
         }
-    }
+    },
+    "tags": ["cli", "tools"]
 }

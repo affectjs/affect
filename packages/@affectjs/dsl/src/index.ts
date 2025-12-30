@@ -9,12 +9,14 @@ import { readFileSync } from "fs";
 // @ts-ignore - Generated file
 import { parse } from "./parser";
 import {
-    compileToJs,
+    compileToOperations,
+    type CompiledOperations,
+    type CompileToOperationsOptions,
     type Program,
-    type CompileOptions,
-    AffectBlock,
-    ConvertBlock,
-} from "./compiler";
+    type AffectBlock,
+    type ConvertBlock,
+    type ASTNode,
+} from "./compiler-to-operations";
 
 /**
  * Parse DSL file and return AST
@@ -41,32 +43,32 @@ export function parseDslFile(
 }
 
 /**
- * Compile DSL to JavaScript code
+ * Compile DSL to Operation[] objects
  */
 export function compileDsl(
     dslContent: string,
-    options?: CompileOptions
-): string {
+    options?: CompileToOperationsOptions
+): CompiledOperations {
     const ast = parseDsl(dslContent);
-    return compileToJs(ast as Program | ConvertBlock | AffectBlock, options);
+    return compileToOperations(ast as Program | ConvertBlock | AffectBlock, options);
 }
 
 /**
- * Compile DSL file to JavaScript
+ * Compile DSL file to Operation[] objects
  */
 export function compileDslFile(
     dslPath: string,
-    options?: CompileOptions
-): string {
+    options?: CompileToOperationsOptions
+): CompiledOperations {
     const content = readFileSync(dslPath, "utf-8");
     return compileDsl(content, options);
 }
 
-export {
-    compileToJs,
-    type Program,
-    type ConvertBlock,
-    type AffectBlock,
-    type ASTNode,
-    type CompileOptions,
-} from "./compiler.js";
+export type {
+    Program,
+    ConvertBlock,
+    AffectBlock,
+    ASTNode,
+    CompiledOperations,
+    CompileToOperationsOptions,
+} from "./compiler-to-operations";

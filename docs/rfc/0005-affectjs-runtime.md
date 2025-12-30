@@ -1,13 +1,14 @@
-# RFC-005: @affectjs/affect - AffectJS 运行时引擎
+# RFC-005: @affectjs/runtime - AffectJS 运行时引擎
 
-**状态**: In Progress  
+**状态**: ✅ Completed  
 **日期**: 2024-12-29  
+**完成日期**: 2025-12-29  
 **作者**: Albert Li  
 **相关问题**: 创建统一的媒体处理运行时，集成 fluent-ffmpeg 和 sharp
 
 ## 摘要
 
-本文档描述了 **@affectjs/affect**，一个统一的媒体处理运行时引擎，用于执行由 `@affectjs/dsl` 编译生成的代码。该运行时设计为：
+本文档描述了 **@affectjs/runtime**，一个统一的媒体处理运行时引擎，用于执行由 `@affectjs/dsl` 编译生成的代码。该运行时设计为：
 1. **多后端支持**: 自动选择最适合的后端（fluent-ffmpeg 用于视频/音频，sharp 用于图像）
 2. **统一 API**: 提供一致的接口，隐藏后端差异
 3. **智能路由**: 根据媒体类型和操作自动选择最优后端
@@ -19,7 +20,7 @@
 
 运行时提供统一的操作接口，底层自动路由到不同的后端：
 
-- **视频/音频处理**: 使用 `@luban-ws/fluent-ffmpeg`
+- **视频/音频处理**: 使用 `@affectjs/fluent-ffmpeg`
 - **图像处理**: 使用 `sharp`
 - **混合操作**: 智能选择或组合使用多个后端
 
@@ -46,7 +47,7 @@ DSL 中的操作自动映射到对应后端的 API：
 ### 包结构
 
 ```
-@affectjs/affect/
+@affectjs/runtime/
 ├── src/
 │   ├── index.ts           # 主入口
 │   ├── runtime.ts         # 运行时核心
@@ -102,7 +103,7 @@ interface Router {
 ### 基础 API
 
 ```typescript
-import { affect, execute } from '@affectjs/affect';
+import { affect, execute } from '@affectjs/runtime';
 
 // 方式 1: 直接执行 DSL 代码
 const result = await execute(compiledCode);
@@ -117,7 +118,7 @@ await affect('video.mp4')
 ### 后端选择 API
 
 ```typescript
-import { affect, useBackend } from '@affectjs/affect';
+import { affect, useBackend } from '@affectjs/runtime';
 
 // 显式指定后端
 await affect('image.jpg')
@@ -129,7 +130,7 @@ await affect('image.jpg')
 ### 批量处理 API
 
 ```typescript
-import { affectBatch } from '@affectjs/affect';
+import { affectBatch } from '@affectjs/runtime';
 
 // 批量处理多个文件
 await affectBatch([
@@ -259,7 +260,7 @@ const result = await execute(compiledCode);
 ### 示例 4: 批量处理
 
 ```typescript
-import { affectBatch } from '@affectjs/affect';
+import { affectBatch } from '@affectjs/runtime';
 
 await affectBatch([
   {
@@ -283,7 +284,7 @@ await affectBatch([
 ## 依赖关系
 
 ```
-@affectjs/affect
+@affectjs/runtime
 ├── @affectjs/dsl          # DSL 编译器
 ├── @luban-ws/fluent-ffmpeg # 视频/音频处理
 └── sharp                  # 图像处理
@@ -314,7 +315,7 @@ await affectBatch([
 ### 从 DSL 编译器到运行时
 
 1. **编译阶段**: `@affectjs/dsl` 将 DSL 编译为 JavaScript 代码
-2. **执行阶段**: `@affectjs/affect` 执行编译后的代码，自动选择后端
+2. **执行阶段**: `@affectjs/runtime` 执行编译后的代码，自动选择后端
 
 ### 向后兼容
 
@@ -342,23 +343,36 @@ await affectBatch([
 - 批量处理性能
 - 内存使用测试
 
-## 未来考虑
+## 实现状态
 
-### 阶段 1: 核心运行时（当前）
+### 阶段 1: 核心运行时 ✅ 已完成
 
 - ✅ 基础运行时架构
-- ✅ fluent-ffmpeg 适配器
-- ✅ sharp 适配器
-- ✅ 自动后端路由
+- ✅ fluent-ffmpeg 适配器（完整实现）
+- ✅ sharp 适配器（完整实现）
+- ✅ 自动后端路由（基于格式支持）
+- ✅ 适配器模式实现（完全可扩展）
+- ✅ 格式支持声明和验证
+- ✅ 统一操作接口（resize, encode, filter, crop, rotate, save）
+- ✅ 条件逻辑支持（if/else）
+- ✅ 元数据获取（getMetadata）
+- ✅ 批量处理（affectBatch）
+- ✅ 执行编译后的 DSL 操作（execute）
 
-### 阶段 2: 高级功能
+### 阶段 2: 高级功能 ✅ 已完成
 
-- ⏳ 流式处理支持
-- ⏳ 并行处理优化
-- ⏳ 缓存机制
-- ⏳ 进度追踪
+- ✅ 进度追踪（progress callback 支持）
+  - fluent-ffmpeg 进度事件集成
+  - sharp 进度报告
+  - 批量处理进度追踪
+- ✅ 并行处理优化（affectBatch 支持 parallel 选项）
+  - 并行处理多个文件
+  - 顺序处理模式
+  - 错误处理和进度报告
+- ⏳ 流式处理支持（未来扩展）
+- ⏳ 缓存机制（未来扩展）
 
-### 阶段 3: 扩展性
+### 阶段 3: 扩展性（未来考虑）
 
 - ⏳ 自定义后端插件系统
 - ⏳ WebAssembly 后端支持
@@ -367,8 +381,17 @@ await affectBatch([
 
 ## 变更日志
 
-### 2024-12-29
-- 初始设计：@affectjs/affect 运行时引擎
+### 2025-12-29（完成）
+- ✅ 完成适配器模式重构，移除硬编码逻辑
+- ✅ 实现格式支持声明和基于格式的后端选择
+- ✅ 实现进度追踪功能（fluent-ffmpeg 和 sharp）
+- ✅ 实现并行处理优化（affectBatch parallel 模式）
+- ✅ 完善错误处理和格式验证
+- ✅ 更新 execute() 函数支持 Operation[] 数据格式
+- ✅ 添加完整的测试覆盖
+
+### 2024-12-29（初始设计）
+- 初始设计：@affectjs/runtime 运行时引擎
 - 定义后端抽象层和适配器接口
 - 设计自动后端路由机制
 - 定义操作映射表

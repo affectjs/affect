@@ -1,40 +1,41 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
     build: {
         lib: {
-            entry: resolve(__dirname, "src/index.ts"),
-            name: "AffectJsAffect",
-            fileName: (format) => {
-                if (format === "es") return "index.mjs";
-                if (format === "cjs") return "index.cjs";
-                return `index.${format}.js`;
+            entry: {
+                index: resolve(__dirname, "src/index.ts"),
+                cli: resolve(__dirname, "src/cli.ts"),
             },
-            formats: ["es", "cjs"],
+            formats: ["es"],
+            fileName: (format, entryName) => `${entryName}.js`,
         },
         rollupOptions: {
             external: [
-                "@affectjs/dsl",
-                "@luban-ws/fluent-ffmpeg",
-                "sharp",
+                "commander",
+                "ora",
                 "fs",
                 "path",
+                "os",
+                "url",
+                "node:url",
+                "child_process",
+                "readline",
+                "module",
+                "util",
             ],
-            output: [
-                {
-                    format: "es",
-                    entryFileNames: "index.mjs",
-                    preserveModules: false,
-                    exports: "named",
+            output: {
+                entryFileNames: (chunkInfo) => {
+                    return chunkInfo.name === "cli" ? "cli.js" : "[name].js";
                 },
-                {
-                    format: "cjs",
-                    entryFileNames: "index.cjs",
-                    preserveModules: false,
-                    exports: "named",
-                },
-            ],
+            },
         },
+        target: "node18",
+        minify: false,
+        sourcemap: true,
     },
 });

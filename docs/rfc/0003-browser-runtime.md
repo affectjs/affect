@@ -1,21 +1,38 @@
-# RFC-003: 视频编辑器核心功能
+# RFC-003: 浏览器运行时（ffmpeg.wasm + sharp.wasm）
 
 **状态**: 计划中  
-**日期**: 2024-12-29  
-**作者**: AI Assistant  
-**相关议题**: 基于 RFC-002 的视频编辑器中期改进计划
+**日期**: 2025-12-29  
+**作者**: Albert Li  
+**相关议题**: 构建通用的浏览器运行时，支持在浏览器中执行 Affect DSL
+
+> **📌 相关 RFC**:
+> - [RFC-008: Affect 快速视频编辑器](./0008-affect-video-editor.md) - 使用浏览器运行时进行预览的视频编辑器
+> - [RFC-009: 浏览器预览运行时](./0009-browser-preview-runtime.md) - 专门为 RFC-008 编辑器优化的浏览器预览运行时
+> 
+> **说明**: RFC-003 提供通用的浏览器运行时基础实现，RFC-009 在此基础上为 RFC-008 编辑器提供专门的预览功能。
 
 ## 摘要
 
-本文档描述了视频编辑器的核心功能实现计划，包括多轨道时间轴、视频裁剪、音频处理、文字叠加、转场效果、滤镜等基础编辑功能，以及关键帧动画、颜色校正、音频混音、绿幕抠像、运动跟踪等高级功能。同时还包括项目保存/加载、版本控制、多人协作等协作功能。
+本文档描述了构建 **AffectJS 浏览器运行时** 的设计和实现，该运行时允许在浏览器中直接执行 Affect DSL，无需服务器端处理。运行时使用 **ffmpeg.wasm** 处理视频/音频，使用 **sharp.wasm** 处理图像，提供与服务器端运行时相同的 API 和功能。
+
+**核心特性**:
+- 🌐 **浏览器原生**: 完全在浏览器中运行，无需服务器
+- ⚡ **WASM 后端**: 使用 ffmpeg.wasm 和 sharp.wasm 提供高性能处理
+- 📝 **DSL 支持**: 完全支持 Affect DSL 语法
+- 🔄 **API 兼容**: 与服务器端运行时 API 兼容
+- 🚀 **通用实现**: 可作为基础运行时，供其他应用（如 RFC-008 编辑器）使用
+
+**与相关 RFC 的关系**:
+- **RFC-008**: 使用本运行时进行浏览器预览的视频编辑器
+- **RFC-009**: 在 RFC-003 基础上为 RFC-008 编辑器优化的专门预览运行时
 
 ## 动机
 
-1. **功能完整性**: 提供专业级视频编辑器的核心功能
-2. **用户体验**: 让用户能够完成完整的视频编辑工作流
-3. **技术验证**: 验证 fluent-ffmpeg 在复杂视频处理场景下的能力
-4. **市场竞争力**: 提供与主流视频编辑器竞争的功能集
-5. **扩展性**: 为后续 AI 功能和高级特性打下基础
+1. **浏览器处理**: 在浏览器中直接处理媒体，无需服务器往返
+2. **离线支持**: 支持离线媒体处理，不依赖服务器
+3. **降低服务器负载**: 将中小型媒体处理任务转移到客户端
+4. **统一 API**: 提供与服务器端相同的 API，简化开发
+5. **基础运行时**: 作为通用基础，供其他应用（如编辑器）使用
 
 ## 设计决策
 
@@ -755,18 +772,26 @@ interface ClipProperties {
 
 ## 参考
 
-- [RFC-002: Web UI 服务器](./0002-web-ui-server.md)
+### 相关 RFC
+
+- [RFC-008: Affect 快速视频编辑器](./0008-affect-video-editor.md) - **应用场景**: 使用浏览器运行时进行预览的视频编辑器
+- [RFC-009: 浏览器预览运行时](./0009-browser-preview-runtime.md) - **扩展实现**: 在 RFC-003 基础上为 RFC-008 编辑器优化的预览运行时
+- [RFC-004: @affectjs/dsl - 统一媒体处理 DSL](./completed/0004-fluent-ffmpeg-dsl.md) - DSL 语法和设计
+- [RFC-005: @affectjs/affect - AffectJS 运行时引擎](./0005-affectjs-runtime.md) - 服务器端运行时引擎
+- [RFC-007: AffectJS 架构设计](./0007-affectjs-architecture.md) - 整体架构设计
+
+### 外部文档
+
 - [FFmpeg 滤镜文档](https://ffmpeg.org/ffmpeg-filters.html)
-- [Remotion 文档](https://www.remotion.dev/)
-- [Elysia 文档](https://elysiajs.com/)
-- [WebSocket 协议](https://tools.ietf.org/html/rfc6455)
+- [ffmpeg.wasm 文档](https://ffmpegwasm.netlify.app/)
+- [sharp-wasm 文档](https://github.com/lovell/sharp-wasm)
 
 ## 变更日志
 
-### 2024-12-29
-- 初始 RFC 创建
-- 定义核心编辑功能需求
-- 设计服务器端和客户端架构
-- 规划实现阶段
+### 2025-12-29
+- 重新定位 RFC-003 为浏览器运行时基础实现
+- 定义通用的浏览器运行时架构（ffmpeg.wasm + sharp.wasm）
+- 明确与 RFC-008 和 RFC-009 的关系
+- RFC-003 提供基础，RFC-009 在此基础上为 RFC-008 编辑器优化
 
 

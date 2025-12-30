@@ -38,8 +38,8 @@ try {
 const program = new Command();
 
 program
-    .name("fluent-ffmpeg-cli")
-    .description("CLI tool for fluent-ffmpeg")
+    .name("fluent-setup")
+    .description("CLI tool for setting up FFmpeg 6.1.* environment")
     .version(version);
 
 // Setup subcommand

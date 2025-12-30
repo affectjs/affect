@@ -1,32 +1,23 @@
 {
     "name": "@affectjs/affect",
-    "version": "0.1.0",
-    "description": "@affectjs/affect - Unified media processing runtime engine (fluent-ffmpeg + sharp)",
+    "version": "6.1.1",
+    "description": "AffectJS CLI - Easy way to run affect DSL and setup FFmpeg environment",
     "keywords": [
-        "affectjs",
-        "media",
-        "video",
-        "audio",
-        "image",
-        "runtime",
-        "fluent-ffmpeg",
-        "sharp"
+        "ffmpeg",
+        "cli",
+        "setup",
+        "environment"
     ],
-    "author": "Albert Li <albert_lee@hotmail.com>",
+    "author": "Albert Li <albert_lee@hotmail.com.com>",
     "license": "MIT",
     "engines": {
         "node": ">=18"
     },
     "type": "module",
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.mjs",
+    "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.cjs"
-        }
+    "bin": {
+        "affect": "./dist/cli.js"
     },
     "files": [
         "dist"
@@ -38,9 +29,11 @@
         "clean": "rm -rf dist"
     },
     "dependencies": {
+        "@affectjs/runtime": "workspace:*",
         "@affectjs/dsl": "workspace:*",
-        "@luban-ws/fluent-ffmpeg": "workspace:*",
-        "sharp": "^0.33.0"
+        "@affectjs/fluent-setup": "workspace:*",
+        "commander": "^12.0.0",
+        "ora": "^8.2.0"
     },
     "devDependencies": {
         "@types/node": "^20.11.0",

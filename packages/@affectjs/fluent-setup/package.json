@@ -1,5 +1,5 @@
 {
-    "name": "@affectjs/cli",
+    "name": "@affectjs/fluent-setup",
     "version": "6.1.1",
     "description": "CLI tool for setting up and verifying FFmpeg environment for fluent-ffmpeg (designed for FFmpeg 6.1.*)",
     "keywords": [
@@ -17,7 +17,13 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "bin": {
-        "fluent-ffmpeg-cli": "./dist/cli.js"
+        "fluent-setup": "./dist/cli.js"
+    },
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
     },
     "files": [
         "dist"

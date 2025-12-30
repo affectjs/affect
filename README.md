@@ -13,8 +13,8 @@
 ## 📦 Packages
 
 - **[@affectjs/dsl](./packages/@affectjs/dsl)** - 统一媒体处理 DSL（视频/音频/图像）- 使用 Peggy 解析器
-- **[@affectjs/affect](./packages/@affectjs/affect)** - 统一媒体处理运行时引擎 - 集成 fluent-ffmpeg 和 sharp
-- **[@affectjs/cli](./packages/@affectjs/cli)** - CLI 工具
+- **[@affectjs/runtime](./packages/@affectjs/runtime)** - 统一媒体处理运行时引擎 - 集成 fluent-ffmpeg 和 sharp
+- **[@affectjs/affect](./packages/@affectjs/affect)** - CLI 工具
 - **[@affectjs/examples](./packages/@affectjs/examples)** - 示例代码
 - **[@affectjs/fluent-ffmpeg](./packages/@affectjs/fluent-ffmpeg)** - A fluent API to FFMPEG for Node.js
 
@@ -49,14 +49,14 @@ affect video "input.mp4" "output.mp4" {
 #### 2. 使用 CLI 执行
 
 ```bash
-pnpm nx run @affectjs/cli:build
+pnpm nx run @affectjs/affect:build
 affect video.affect
 ```
 
 #### 3. 在代码中使用
 
 ```typescript
-import { affect } from '@affectjs/affect';
+import { affect } from '@affectjs/runtime';
 import { compileDslFile, execute } from '@affectjs/dsl';
 
 // 方式 1: 直接使用运行时 API
@@ -114,13 +114,13 @@ pnpm run setup --required
 pnpm nx build @affectjs/dsl
 
 # 构建运行时包
-pnpm nx build @affectjs/affect
+pnpm nx build @affectjs/runtime
 
 # 运行 DSL 测试
 pnpm nx test @affectjs/dsl
 
 # 运行运行时测试
-pnpm nx test @affectjs/affect
+pnpm nx test @affectjs/runtime
 
 # 生成 fluent-ffmpeg 文档
 pnpm nx doc @affectjs/fluent-ffmpeg
@@ -154,8 +154,8 @@ pnpm nx doc @affectjs/fluent-ffmpeg
 ### 包文档
 
 - [@affectjs/dsl README](./packages/@affectjs/dsl/README.md) - DSL 语法和使用指南
-- [@affectjs/affect README](./packages/@affectjs/affect/README.md) - 运行时 API 文档
-- [@affectjs/cli README](./packages/@affectjs/cli/README.md) - CLI 工具文档
+- [@affectjs/runtime README](./packages/@affectjs/runtime/README.md) - 运行时 API 文档
+- [@affectjs/affect README](./packages/@affectjs/affect/README.md) - CLI 工具文档
 - [@affectjs/fluent-ffmpeg README](./packages/@affectjs/fluent-ffmpeg/README.md) - Fluent FFmpeg API 文档
 
 ### RFC 文档

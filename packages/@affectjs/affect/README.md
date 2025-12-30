@@ -1,90 +1,138 @@
 # @affectjs/affect
 
-统一媒体处理运行时引擎 - 集成 fluent-ffmpeg 和 sharp
+AffectJS CLI - Easy way to run affect DSL and setup FFmpeg environment
 
-@affectjs/affect 是 AffectJS 的运行时引擎，自动选择最适合的后端来处理视频、音频和图像。
+## Features
 
-## 特性
+1. **Setup FFmpeg Environment**: Automatically sets up FFmpeg 6.1.* by calling `fluent-setup`
+2. **Run Affect DSL**: Execute `.affect` DSL files directly
+3. **Compile DSL**: Compile `.affect` files to JavaScript or Operation[] data
 
-- 🎬 **多后端支持**: 自动选择 fluent-ffmpeg（视频/音频）或 sharp（图像）
-- 🚀 **统一 API**: 一致的接口，隐藏后端差异
-- 🧠 **智能路由**: 根据媒体类型和操作自动选择最优后端
-- ⚡ **性能优化**: 利用各后端的优势，提供最佳性能
-
-## 安装
+## Installation
 
 ```bash
-pnpm add @affectjs/affect
+pnpm add -g @affectjs/affect
 ```
 
-## 使用
+Or use with npx:
 
-### 基础用法
-
-```typescript
-import { affect } from '@affectjs/affect';
-
-// 视频处理
-await affect('input.mp4')
-  .resize(1280, 720)
-  .encode('h264', 2000)
-  .save('output.mp4');
-
-// 图像处理
-await affect('photo.jpg')
-  .resize(1920, 1080)
-  .filter('grayscale')
-  .save('output.jpg');
+```bash
+npx @affectjs/affect
 ```
 
-### 执行编译后的 DSL 代码
+## Requirements
 
-```typescript
-import { execute } from '@affectjs/affect';
-import { compileDslFile } from '@affectjs/dsl';
+- **FFmpeg 6.1.*** - Automatically set up via `fluent-setup`
+- Node.js >= 18
 
-const compiledCode = compileDslFile('video.affect');
-const result = await execute(compiledCode);
+## Commands
+
+### `setup` - Setup FFmpeg Environment
+
+Delegates to `fluent-setup` to configure FFmpeg 6.1.* environment.
+
+```bash
+affect setup [options]
 ```
 
-### 批量处理
+#### Options
 
-```typescript
-import { affectBatch } from '@affectjs/affect';
+- `-i, --install` - Automatically install/upgrade ffmpeg if needed
+- `-s, --silent` - Suppress non-error output
+- `--check-only` - Only check environment, do not install
+- `--json` - Output results as JSON
 
-await affectBatch([
-  { input: 'video1.mp4', output: 'out1.mp4', operations: [...] },
-  { input: 'image1.jpg', output: 'out1.jpg', operations: [...] },
-]);
+#### Examples
+
+```bash
+# Check FFmpeg environment
+affect setup
+
+# Check and install if needed
+affect setup --install
+
+# Check only (no installation)
+affect setup --check-only
 ```
 
-## API
+### `run` - Run Affect DSL File
 
-### `affect(input: string)`
+Execute an `.affect` DSL file directly.
 
-创建媒体处理链，自动检测媒体类型并选择后端。
+```bash
+affect run <dsl-file> [options]
+```
 
-### `execute(compiledCode: string, options?: RuntimeOptions)`
+#### Options
 
-执行由 `@affectjs/dsl` 编译生成的代码。
+- `-o, --output <path>` - Override output file path
+- `-s, --silent` - Suppress output
+- `--no-setup` - Skip FFmpeg setup check
 
-### `affectBatch(items: BatchItem[])`
+#### Examples
 
-批量处理多个文件。
+```bash
+# Run a DSL file
+affect run video.affect
 
-## 后端选择
+# Run with custom output
+affect run video.affect -o output.mp4
 
-运行时根据以下规则自动选择后端：
+# Run without setup check
+affect run video.affect --no-setup
+```
 
-- **图像文件** (`.jpg`, `.png`, `.webp`, 等) → `sharp`
-- **视频文件** (`.mp4`, `.avi`, `.mov`, 等) → `fluent-ffmpeg`
-- **音频文件** (`.mp3`, `.wav`, `.aac`, 等) → `fluent-ffmpeg`
+#### Example DSL File
 
-## 文档
+```dsl
+affect video "input.mp4" "output.mp4" {
+  resize 1280 720
+  encode h264 2000
+  encode aac 128
+}
+```
 
-详细文档请参考 [RFC-005](../docs/rfc/0005-affectjs-runtime.md)。
+### `compile` - Compile DSL to JavaScript or Operation[]
+
+Compile an `.affect` DSL file to JavaScript code (for edge functions) or Operation[] data (default).
+
+```bash
+affect compile <dsl-file> [options]
+```
+
+#### Options
+
+- `-o, --output <path>` - Output file path (default: same name with .js or .json extension)
+- `--to-edge` - Compile to JavaScript code for edge functions (Vercel, Cloudflare, Deno, etc.)
+- `--target <runtime>` - Target edge runtime (vercel, cloudflare, deno, generic)
+
+#### Examples
+
+```bash
+# Compile DSL to Operation[] (JSON format, default)
+affect compile video.affect
+
+# Compile to JavaScript for edge functions
+affect compile video.affect --to-edge
+
+# Compile for specific edge runtime
+affect compile video.affect --to-edge --target vercel
+```
+
+## Architecture
+
+The `@affectjs/affect` CLI package orchestrates:
+
+1. **@affectjs/fluent-setup** - Sets up FFmpeg environment
+2. **@affectjs/dsl** - Compiles DSL files
+3. **@affectjs/runtime** - Executes compiled DSL operations
+
+## Dependencies
+
+- `@affectjs/fluent-setup` (workspace:*) - For FFmpeg setup
+- `@affectjs/dsl` (workspace:*) - For DSL compilation
+- `@affectjs/runtime` (workspace:*) - For DSL execution
 
 ## License
 
 MIT
-
