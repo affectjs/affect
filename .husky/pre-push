@@ -1,4 +1,2 @@
-# Skip fluent-ffmpeg and runtime tests temporarily due to dependency issues
-# These tests require FFmpeg setup and proper workspace linking
-pnpm nx test @affectjs/dsl
+pnpm test
 
