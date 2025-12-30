@@ -19,3 +19,7 @@ build
 
 # Generated documentation (kept at root level)
 # Note: docs/ is intentionally kept at root level, not ignored
+
+# Test output directories
+**/test/assets/output/
+**/test/**/output/

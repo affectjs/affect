@@ -1,11 +1,19 @@
 import { defineConfig } from "vitest/config";
+import { resolve } from "path";
 
 export default defineConfig({
+  resolve: {
+    // 在 monorepo 中，vitest 需要明确知道如何解析 workspace 包
+    // 使用 alias 指向实际的包路径，这是 monorepo 的标准做法
+    alias: {
+      "@affectjs/fluent-ffmpeg": resolve(__dirname, "../../@affectjs/fluent-ffmpeg"),
+    },
+  },
   test: {
     globals: true,
     environment: "node",
-    // 使用 pnpm workspace 的包解析机制
-    // deps.inline 确保 workspace 包被正确解析
+    // deps.inline 告诉 vitest 不要外部化这些包，而是内联处理
+    // 这对于 workspace 包和原生模块（如 sharp）很重要
     deps: {
       inline: ["@affectjs/fluent-ffmpeg", "sharp"],
     },
