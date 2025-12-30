@@ -47,7 +47,7 @@
     }
   },
   "scripts": {
-    "test": ". scripts/setup-env.sh && NODE_ENV=test pnpm exec mocha --require should --reporter spec",
+    "test": ". scripts/setup-env.sh && NODE_ENV=test mocha --require should --reporter spec",
     "doc": "jsdoc --configure tools/jsdoc-conf.json",
     "setup": "pnpm exec fluent-setup setup",
     "prepare": "pnpm exec fluent-setup setup"
