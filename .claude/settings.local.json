@@ -11,7 +11,10 @@
       "Bash(git push)",
       "Bash(pnpm test:*)",
       "Bash(npx nx test:*)",
-      "Bash(npx nx run-many:*)"
+      "Bash(npx nx run-many:*)",
+      "Bash(for i in {1..3})",
+      "Bash(do echo \"=== Run $i ===\")",
+      "Bash(done)"
     ]
   },
   "enableAllProjectMcpServers": true,
