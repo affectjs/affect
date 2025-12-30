@@ -14,8 +14,13 @@ export default defineConfig({
     environment: "node",
     // deps.inline 告诉 vitest 不要外部化这些包，而是内联处理
     // 这对于 workspace 包和原生模块（如 sharp）很重要
+    // 同时需要内联 @affectjs/fluent-ffmpeg 的依赖（如 which）
     deps: {
-      inline: ["@affectjs/fluent-ffmpeg", "sharp"],
+      inline: [
+        "@affectjs/fluent-ffmpeg",
+        "sharp",
+        "which", // @affectjs/fluent-ffmpeg 的依赖
+      ],
     },
     coverage: {
       provider: "v8",
