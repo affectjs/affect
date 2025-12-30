@@ -9,6 +9,14 @@ import { describe, it, expect, beforeEach, afterEach, afterAll } from "vitest";
 // delimiter fallback
 const PATH_DELIMITER = path.delimiter || (os.platform().match(/win(32|64)/) ? ";" : ":");
 
+// Ensure ffmpeg/ffprobe are in PATH for tests that rely on PATH search
+if (process.env.FFMPEG_PATH) {
+  const dir = path.dirname(process.env.FFMPEG_PATH);
+  if (!process.env.PATH?.includes(dir)) {
+    process.env.PATH = dir + PATH_DELIMITER + (process.env.PATH || "");
+  }
+}
+
 describe("Capabilities", function () {
   describe("ffmpeg capabilities", function () {
     it("should enable querying for available codecs", function () {
@@ -627,7 +635,10 @@ describe("Capabilities", function () {
     let skipAltTest = false;
     let skipTest = false;
 
-    if (process.env.FLVTOOL2_PRESENT === "no") {
+    if (
+      process.env.FLVTOOL2_PRESENT === "no" ||
+      (!process.env.FLVTOOL2_PATH && process.env.FLVTOOL2_PRESENT !== "yes")
+    ) {
       skipTest = true;
     }
 

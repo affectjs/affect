@@ -1,6 +1,13 @@
 {
-  "enabledMcpjsonServers": [
-    "nx-mcp"
-  ],
-  "enableAllProjectMcpServers": true
+  "permissions": {
+    "allow": [
+      "Bash(nx build:*)",
+      "Bash(npx nx build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm build:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["nx-mcp"]
 }

@@ -5,24 +5,13 @@
   "keywords": [
     "ffmpeg"
   ],
-  "author": "Albert Li <albert_lee@hotmail.com.com>",
-  "contributors": [
-    {
-      "name": "Felix Fichte",
-      "email": "spruce@space-ships.de"
-    },
-    {
-      "name": "Stefan Schaermeli",
-      "email": "schaermu@gmail.com"
-    }
-  ],
+  "author": "Albert Li <albert_lee@hotmail.com>",
   "license": "MIT",
   "bugs": {
-    "mail": "schaermu@gmail.com",
+    "mail": "albert_lee@hotmail.com",
     "url": "http://github.com/affectjs/affect/issues"
   },
   "devDependencies": {
-    "@affectjs/affect": "workspace:*",
     "@types/async": "^3.2.25",
     "@types/node": "^20.11.0",
     "@types/which": "^3.0.4",

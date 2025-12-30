@@ -59,12 +59,12 @@ export type FfmpegCommand = EventEmitter & {
   usingPreset(preset: string | Function): FfmpegCommand;
   addInput(input: string | any): FfmpegCommand;
   input(input: string | any): FfmpegCommand;
-  addOutput(output: string | any): FfmpegCommand;
-  output(output: string | any): FfmpegCommand;
+  addOutput(target: string | any, pipeopts?: any): FfmpegCommand;
+  output(target: string | any, pipeopts?: any): FfmpegCommand;
   addOption(option: string, value?: any): FfmpegCommand;
-  addOptions(options: string[] | any): FfmpegCommand;
+  addOptions(...options: any[]): FfmpegCommand;
   addInputOption(option: string, value?: any): FfmpegCommand;
-  addInputOptions(options: string[] | any): FfmpegCommand;
+  addInputOptions(...options: any[]): FfmpegCommand;
   addOutputOption(option: string, value?: any): FfmpegCommand;
   addOutputOptions(options: string[] | any): FfmpegCommand;
   withVideoCodec(codec: string): FfmpegCommand;
@@ -284,16 +284,17 @@ const utils = {
     }
 
     // @ts-ignore
-    which(name, function (err: Error | null, result: string | undefined) {
-      if (err) {
+    which(name)
+      .then(function (result: string) {
+        // @ts-ignore
+        whichCache[name] = result;
+        callback(null, result);
+      })
+      .catch(function (err: any) {
         // Treat errors as not found
         whichCache[name] = "";
-        return callback(null, "");
-      }
-      // @ts-ignore: which types might be slightly off
-      whichCache[name] = result!;
-      callback(null, result!);
-    });
+        callback(null, "");
+      });
   },
 
   /**

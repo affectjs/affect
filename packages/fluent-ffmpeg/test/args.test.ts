@@ -27,7 +27,7 @@ Ffmpeg.prototype._test_getArgs = function (callback: (args: string[], err?: Erro
     return callback([], e as Error);
   }
 
-  callback(args);
+  callback(args.map(String));
 };
 
 // @ts-ignore
@@ -100,7 +100,7 @@ describe("Command", function () {
           nolog: true,
           preset: path.join(__dirname, "assets", "presets"),
         })
-          .usingPreset("custompreset")
+          .usingPreset("custompreset.cjs")
           ._test_getArgs(function (args: any) {
             try {
               expect(args.length).toBe(42);
@@ -148,7 +148,9 @@ describe("Command", function () {
 
     it("should throw an exception when a preset has no load function", function () {
       expect(() => {
-        new Ffmpeg({ presets: "../../lib" }).usingPreset("utils");
+        new Ffmpeg({
+          presets: path.join(__dirname, "assets", "presets"),
+        }).usingPreset("noload.cjs");
       }).toThrow(/has no load\(\) function/);
     });
   });
@@ -272,19 +274,20 @@ describe("Command", function () {
   describe("withMultiFile", function () {
     it("should allow image2 multi-file input format", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: "image-%05d.png", logger: testhelper.logger })._test_getArgs(
-          function (args: any, err: any) {
-            testhelper.logArgError(err);
-            try {
-              expect(err).toBeFalsy();
-              expect(args).toContain("-i");
-              expect(args).toContain("image-%05d.png");
-              resolve();
-            } catch (e) {
-              reject(e);
-            }
+        new Ffmpeg({ source: "image-%05d.png", logger: testhelper.logger })._test_getArgs(function (
+          args: any,
+          err: any
+        ) {
+          testhelper.logArgError(err);
+          try {
+            expect(err).toBeFalsy();
+            expect(args).toContain("-i");
+            expect(args).toContain("image-%05d.png");
+            resolve();
+          } catch (e) {
+            reject(e);
           }
-        );
+        });
       });
     });
   });
@@ -527,21 +530,22 @@ describe("Command", function () {
   describe("loop", function () {
     it("should add the -loop 1 argument", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: testfile, logger: testhelper.logger })
-          .loop()
-          ._test_getArgs(function (args: any, err: any) {
-            testhelper.logArgError(err);
-            try {
-              expect(err).toBeFalsy();
-              if (args.indexOf("-loop") != -1 || args.indexOf("-loop_output") != -1) {
-                resolve();
-              } else {
-                reject(new Error("args should contain loop or loop_output"));
-              }
-            } catch (e) {
-              reject(e);
+        new Ffmpeg({ source: testfile, logger: testhelper.logger }).loop()._test_getArgs(function (
+          args: any,
+          err: any
+        ) {
+          testhelper.logArgError(err);
+          try {
+            expect(err).toBeFalsy();
+            if (args.indexOf("-loop") != -1 || args.indexOf("-loop_output") != -1) {
+              resolve();
+            } else {
+              reject(new Error("args should contain loop or loop_output"));
             }
-          });
+          } catch (e) {
+            reject(e);
+          }
+        });
       });
     });
     it("should add the -loop 1 and a time argument (seconds)", function () {

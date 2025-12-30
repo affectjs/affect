@@ -6,7 +6,8 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       name: "fluent-ffmpeg",
-      fileName: "index",
+      fileName: (format) => `index.${format === "es" ? "mjs" : "cjs"}`,
+      formats: ["es", "cjs"],
     },
     rollupOptions: {
       external: [
@@ -18,16 +19,9 @@ export default defineConfig({
         "stream",
         "async",
         "which",
-        "events",
+        "module",
+        "os",
       ],
-      output: {
-        globals: {
-          events: "EventEmitter",
-          path: "path",
-          fs: "fs",
-          child_process: "child_process",
-        },
-      },
     },
   },
 });

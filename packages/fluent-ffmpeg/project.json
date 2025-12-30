@@ -1,20 +1,20 @@
 {
   "name": "@affectjs/fluent-ffmpeg",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/@affectjs/fluent-ffmpeg",
+  "sourceRoot": "packages/fluent-ffmpeg",
   "projectType": "library",
   "targets": {
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "echo 'No build step needed for JavaScript library'",
+        "command": "vite build",
         "cwd": "{projectRoot}"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm test",
+        "command": "vitest run",
         "cwd": "{projectRoot}"
       }
     },

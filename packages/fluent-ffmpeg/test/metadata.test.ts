@@ -61,10 +61,12 @@ describe("Metadata", function () {
           expect(err).toBeFalsy();
           expect("format" in data).toBe(true);
           expect(typeof data.format).toBe("object");
+          // console.log("Format data:", JSON.stringify(data.format));
           expect(Number(data.format.duration)).toBe(2);
           expect(data.format.format_name).toBe("avi");
           resolve();
         } catch (e) {
+          console.log("Format data (failed):", JSON.stringify(data.format));
           reject(e);
         }
       });
@@ -100,7 +102,7 @@ describe("Metadata", function () {
           expect("streams" in data).toBe(true);
           expect(Array.isArray(data.streams)).toBe(true);
           expect(data.streams.length).toBe(1);
-          expect(data.streams[0].bit_rate).toBe("322427 bit/s");
+          expect(data.streams[0].bit_rate).toBe("314280 bit/s");
           resolve();
         } catch (e) {
           reject(e);

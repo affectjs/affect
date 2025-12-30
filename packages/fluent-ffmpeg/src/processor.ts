@@ -110,8 +110,8 @@ export default function (proto: any) {
     this: any,
     args: string[],
     options: any,
-    processCB: Function = function () {},
-    endCB: Function = function (err?: any, stdout?: any, stderr?: any) {}
+    processCB?: Function,
+    endCB?: Function
   ) {
     // Enable omitting options
     if (typeof options === "function") {
@@ -124,6 +124,11 @@ export default function (proto: any) {
     if (typeof endCB === "undefined") {
       endCB = processCB;
       processCB = function () {};
+    }
+
+    // Handle case where both were undefined (e.g. called with only args and options)
+    if (typeof endCB === "undefined") {
+      endCB = function () {};
     }
 
     var maxLines = "stdoutLines" in options ? options.stdoutLines : this.options.stdoutLines;

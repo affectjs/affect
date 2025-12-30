@@ -1,7 +1,7 @@
 {
   "name": "@affectjs/affect",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/@affectjs/affect/src",
+  "sourceRoot": "packages/affect/src",
   "projectType": "library",
   "targets": {
     "build": {

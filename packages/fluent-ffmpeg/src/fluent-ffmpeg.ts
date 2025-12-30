@@ -26,18 +26,18 @@ var ARGLISTS = [
  * @param {String|ReadableStream} [input] input file path or readable stream
  * @param {Object} [options] command options
  * @param {Object} [options.logger=<no logging>] logger object with 'error', 'warning', 'info' and 'debug' methods
- * @param {Number} [options.niceness=0] ffmpeg process niceness, ignored on Windows
- * @param {Number} [options.priority=0] alias for `niceness`
- * @param {String} [options.presets="fluent-ffmpeg/lib/presets"] directory to load presets from
- * @param {String} [options.preset="fluent-ffmpeg/lib/presets"] alias for `presets`
- * @param {String} [options.stdoutLines=100] maximum lines of ffmpeg output to keep in memory, use 0 for unlimited
- * @param {Number} [options.timeout=<no timeout>] ffmpeg processing timeout in seconds
- * @param {String|ReadableStream} [options.source=<no input>] alias for the `input` parameter
+ * @param {Number} [options.niceness] ffmpeg process niceness, ignored on Windows
+ * @param {Number} [options.priority] alias for `niceness`
+ * @param {String} [options.presets] directory to load presets from
+ * @param {String} [options.preset] alias for `presets`
+ * @param {String} [options.stdoutLines] maximum lines of ffmpeg output to keep in memory, use 0 for unlimited
+ * @param {Number} [options.timeout] ffmpeg processing timeout in seconds
+ * @param {String|ReadableStream} [options.source] alias for the `input` parameter
  */
 function FfmpegCommand(this: FfmpegCommandInterface, input?: any, options?: any) {
   // Make 'new' optional
   if (!(this instanceof FfmpegCommand)) {
-    return new FfmpegCommand(input, options);
+    return new (FfmpegCommand as any)(input, options);
   }
 
   EventEmitter.call(this);
@@ -59,7 +59,7 @@ function FfmpegCommand(this: FfmpegCommandInterface, input?: any, options?: any)
 
   // Add target-less output for backwards compatibility
   this._outputs = [];
-  this.output();
+  this.output(undefined);
 
   // Create argument lists
   var self = this;
@@ -115,7 +115,7 @@ util.inherits(FfmpegCommand, EventEmitter);
  * @return FfmpegCommand
  */
 FfmpegCommand.prototype.clone = function (this: any) {
-  var clone = new FfmpegCommand();
+  var clone = new (FfmpegCommand as any)();
   var self = this;
 
   // Clone options and logger
@@ -197,39 +197,39 @@ import recipesCb from "./recipes";
 recipesCb(FfmpegCommand.prototype);
 
 FfmpegCommand.setFfmpegPath = function (path: string) {
-  new FfmpegCommand().setFfmpegPath(path);
+  new (FfmpegCommand as any)().setFfmpegPath(path);
 };
 
 FfmpegCommand.setFfprobePath = function (path: string) {
-  new FfmpegCommand().setFfprobePath(path);
+  new (FfmpegCommand as any)().setFfprobePath(path);
 };
 
 FfmpegCommand.setFlvtoolPath = function (path: string) {
-  new FfmpegCommand().setFlvtoolPath(path);
+  new (FfmpegCommand as any)().setFlvtoolPath(path);
 };
 
 FfmpegCommand.availableFilters = FfmpegCommand.getAvailableFilters = function (
   callback: (err: Error | null, filters?: any) => void
 ) {
-  new FfmpegCommand().availableFilters(callback);
+  new (FfmpegCommand as any)().availableFilters(callback);
 };
 
 FfmpegCommand.availableCodecs = FfmpegCommand.getAvailableCodecs = function (
   callback: (err: Error | null, codecs?: any) => void
 ) {
-  new FfmpegCommand().availableCodecs(callback);
+  new (FfmpegCommand as any)().availableCodecs(callback);
 };
 
 FfmpegCommand.availableFormats = FfmpegCommand.getAvailableFormats = function (
   callback: (err: Error | null, formats?: any) => void
 ) {
-  new FfmpegCommand().availableFormats(callback);
+  new (FfmpegCommand as any)().availableFormats(callback);
 };
 
 FfmpegCommand.availableEncoders = FfmpegCommand.getAvailableEncoders = function (
   callback: (err: Error | null, encoders?: any) => void
 ) {
-  new FfmpegCommand().availableEncoders(callback);
+  new (FfmpegCommand as any)().availableEncoders(callback);
 };
 
 /* Add ffprobe methods */
@@ -237,7 +237,7 @@ import ffprobe from "./ffprobe";
 ffprobe(FfmpegCommand.prototype);
 
 FfmpegCommand.ffprobe = function (file: string) {
-  var instance = new FfmpegCommand(file);
+  var instance = new (FfmpegCommand as any)(file);
   instance.ffprobe.apply(instance, Array.prototype.slice.call(arguments, 1));
 };
 

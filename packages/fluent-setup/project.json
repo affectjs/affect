@@ -1,7 +1,7 @@
 {
   "name": "@affectjs/fluent-setup",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/@affectjs/fluent-setup/src",
+  "sourceRoot": "packages/fluent-setup/src",
   "projectType": "library",
   "targets": {
     "build": {

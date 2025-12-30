@@ -449,24 +449,24 @@ export default function (proto: any) {
             });
 
             var encoders = codecData.description.match(ffEncodersRegexp);
-            encoders = encoders ? encoders[1].trim().split(" ") : [];
+            var encoderParts = encoders ? encoders[1].trim().split(" ") : [];
 
             var decoders = codecData.description.match(ffDecodersRegexp);
-            decoders = decoders ? decoders[1].trim().split(" ") : [];
+            var decoderParts = decoders ? decoders[1].trim().split(" ") : [];
 
-            if (encoders.length || decoders.length) {
+            if (encoderParts.length || decoderParts.length) {
               var coderData: any = {};
               utils.copy(codecData, coderData);
               delete coderData.canEncode;
               delete coderData.canDecode;
 
-              encoders.forEach(function (name: string) {
+              encoderParts.forEach(function (name: string) {
                 data[name] = {};
                 utils.copy(coderData, data[name]);
                 data[name].canEncode = true;
               });
 
-              decoders.forEach(function (name: string) {
+              decoderParts.forEach(function (name: string) {
                 if (name in data) {
                   data[name].canDecode = true;
                 } else {

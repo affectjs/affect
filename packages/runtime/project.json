@@ -1,21 +1,23 @@
 {
   "name": "@affectjs/runtime",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/@affectjs/runtime/src",
+  "sourceRoot": "packages/runtime/src",
   "projectType": "library",
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-commands",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "packages/@affectjs/runtime/dist"
+        "command": "vite build",
+        "cwd": "{projectRoot}",
+        "outputPath": "packages/runtime/dist"
       }
     },
     "type-check": {
       "executor": "nx:run-commands",
       "options": {
         "command": "tsc --noEmit",
-        "cwd": "packages/@affectjs/runtime"
+        "cwd": "packages/runtime"
       }
     }
   }

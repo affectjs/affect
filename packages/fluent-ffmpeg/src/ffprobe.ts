@@ -171,7 +171,7 @@ export default function (proto: any) {
       if (!hasOutputFormat) {
         // Default to ini format for backward compatibility with parseFfprobeOutput
         // Try -of first (FFmpeg 6.1.1+), fallback to -print_format for older versions
-        ffprobeArgs.push("-of", "ini");
+        ffprobeArgs.push("-of", "default");
       }
       var src = input.isStream ? "pipe:0" : input.source;
       ffprobeArgs = ffprobeArgs.concat(options, src);
