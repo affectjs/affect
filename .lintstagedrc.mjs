@@ -26,23 +26,35 @@ export default {
     return commands;
   },
   // JavaScript 文件：格式化
+  // 显式传递文件名数组，确保 prettier 能正确处理所有文件
   "**/*.{js,jsx}": (filenames) => {
     if (filenames.length === 0) return [];
-    return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    // 使用引号包裹每个文件名，以正确处理包含空格的文件名
+    const quotedFilenames = filenames.map((f) => `"${f}"`).join(" ");
+    return [`pnpm exec prettier --write ${quotedFilenames}`];
   },
   // JSON 文件：格式化
+  // 显式传递文件名数组，确保 prettier 能正确处理所有文件
   "**/*.json": (filenames) => {
     if (filenames.length === 0) return [];
-    return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    // 使用引号包裹每个文件名，以正确处理包含空格的文件名
+    const quotedFilenames = filenames.map((f) => `"${f}"`).join(" ");
+    return [`pnpm exec prettier --write ${quotedFilenames}`];
   },
   // Markdown 文件：格式化
+  // 显式传递文件名数组，确保 prettier 能正确处理所有文件
   "**/*.md": (filenames) => {
     if (filenames.length === 0) return [];
-    return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    // 使用引号包裹每个文件名，以正确处理包含空格的文件名
+    const quotedFilenames = filenames.map((f) => `"${f}"`).join(" ");
+    return [`pnpm exec prettier --write ${quotedFilenames}`];
   },
   // YAML 文件：格式化
+  // 显式传递文件名数组，确保 prettier 能正确处理所有文件
   "**/*.{yml,yaml}": (filenames) => {
     if (filenames.length === 0) return [];
-    return [`pnpm exec prettier --write ${filenames.join(" ")}`];
+    // 使用引号包裹每个文件名，以正确处理包含空格的文件名
+    const quotedFilenames = filenames.map((f) => `"${f}"`).join(" ");
+    return [`pnpm exec prettier --write ${quotedFilenames}`];
   },
 };
