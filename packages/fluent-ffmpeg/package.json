@@ -1,0 +1,66 @@
+{
+  "name": "@affectjs/fluent-ffmpeg",
+  "version": "6.1.1",
+  "description": "A fluent API to FFMPEG (http://www.ffmpeg.org)",
+  "keywords": [
+    "ffmpeg"
+  ],
+  "author": "Albert Li <albert_lee@hotmail.com.com>",
+  "contributors": [
+    {
+      "name": "Felix Fichte",
+      "email": "spruce@space-ships.de"
+    },
+    {
+      "name": "Stefan Schaermeli",
+      "email": "schaermu@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "mail": "schaermu@gmail.com",
+    "url": "http://github.com/affectjs/affect/issues"
+  },
+  "devDependencies": {
+    "@affectjs/affect": "workspace:*",
+    "@types/async": "^3.2.25",
+    "@types/node": "^20.11.0",
+    "@types/which": "^3.0.4",
+    "@vitest/coverage-v8": "^4.0.16",
+    "jsdoc": "^4.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "@affectjs/fluent-setup": "workspace:*",
+    "async": "^3.2.5",
+    "commander": "^12.0.0",
+    "ora": "^8.2.0",
+    "which": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "doc": "jsdoc --configure tools/jsdoc-conf.json",
+    "report-coverage": "nyc report --reporter=text-lcov | coveralls",
+    "prepare": "pnpm exec fluent-setup setup"
+  }
+}

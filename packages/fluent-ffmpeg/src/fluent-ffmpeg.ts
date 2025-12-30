@@ -1,0 +1,264 @@
+/*jshint node:true*/
+import path from "path";
+import util from "util";
+import { EventEmitter } from "events";
+
+import utils from "./utils";
+import type { FfmpegCommand as FfmpegCommandInterface } from "./utils";
+var ARGLISTS = [
+  "_global",
+  "_audio",
+  "_audioFilters",
+  "_video",
+  "_videoFilters",
+  "_sizeFilters",
+  "_complexFilters",
+];
+
+/**
+ * Create an ffmpeg command
+ *
+ * Can be called with or without the 'new' operator, and the 'input' parameter
+ * may be specified as 'options.source' instead (or passed later with the
+ * addInput method).
+ *
+ * @constructor
+ * @param {String|ReadableStream} [input] input file path or readable stream
+ * @param {Object} [options] command options
+ * @param {Object} [options.logger=<no logging>] logger object with 'error', 'warning', 'info' and 'debug' methods
+ * @param {Number} [options.niceness=0] ffmpeg process niceness, ignored on Windows
+ * @param {Number} [options.priority=0] alias for `niceness`
+ * @param {String} [options.presets="fluent-ffmpeg/lib/presets"] directory to load presets from
+ * @param {String} [options.preset="fluent-ffmpeg/lib/presets"] alias for `presets`
+ * @param {String} [options.stdoutLines=100] maximum lines of ffmpeg output to keep in memory, use 0 for unlimited
+ * @param {Number} [options.timeout=<no timeout>] ffmpeg processing timeout in seconds
+ * @param {String|ReadableStream} [options.source=<no input>] alias for the `input` parameter
+ */
+function FfmpegCommand(this: FfmpegCommandInterface, input?: any, options?: any) {
+  // Make 'new' optional
+  if (!(this instanceof FfmpegCommand)) {
+    return new FfmpegCommand(input, options);
+  }
+
+  EventEmitter.call(this);
+
+  if (typeof input === "object" && !("readable" in input)) {
+    // Options object passed directly
+    options = input;
+  } else {
+    // Input passed first
+    options = options || {};
+    options.source = input;
+  }
+
+  // Add input if present
+  this._inputs = [];
+  if (options.source) {
+    this.input(options.source);
+  }
+
+  // Add target-less output for backwards compatibility
+  this._outputs = [];
+  this.output();
+
+  // Create argument lists
+  var self = this;
+  ["_global", "_complexFilters"].forEach(function (prop) {
+    self[prop] = utils.args();
+  });
+
+  // Set default option values
+  options.stdoutLines = "stdoutLines" in options ? options.stdoutLines : 100;
+  options.presets = options.presets || options.preset || path.join(__dirname, "presets");
+  options.niceness = options.niceness || options.priority || 0;
+
+  // Save options
+  this.options = options;
+
+  // Setup logger
+  this.logger = options.logger || {
+    debug: function () {},
+    info: function () {},
+    warn: function () {},
+    error: function () {},
+  };
+}
+util.inherits(FfmpegCommand, EventEmitter);
+// export default FfmpegCommand;
+
+/**
+ * Clone an ffmpeg command
+ *
+ * This method is useful when you want to process the same input multiple times.
+ * It returns a new FfmpegCommand instance with the exact same options.
+ *
+ * All options set _after_ the clone() call will only be applied to the instance
+ * it has been called on.
+ *
+ * @example
+ *   var command = ffmpeg('/path/to/source.avi')
+ *     .audioCodec('libfaac')
+ *     .videoCodec('libx264')
+ *     .format('mp4');
+ *
+ *   command.clone()
+ *     .size('320x200')
+ *     .save('/path/to/output-small.mp4');
+ *
+ *   command.clone()
+ *     .size('640x400')
+ *     .save('/path/to/output-medium.mp4');
+ *
+ *   command.save('/path/to/output-original-size.mp4');
+ *
+ * @method FfmpegCommand#clone
+ * @return FfmpegCommand
+ */
+FfmpegCommand.prototype.clone = function (this: any) {
+  var clone = new FfmpegCommand();
+  var self = this;
+
+  // Clone options and logger
+  clone.options = this.options;
+  clone.logger = this.logger;
+
+  // Clone inputs
+  clone._inputs = this._inputs.map(function (input: any) {
+    return {
+      source: input.source,
+      options: input.options.clone(),
+    };
+  });
+
+  // Create first output
+  if ("target" in this._outputs[0]) {
+    // We have outputs set, don't clone them and create first output
+    clone._outputs = [];
+    clone.output();
+  } else {
+    // No outputs set, clone first output options
+    clone._outputs = [
+      (clone._currentOutput = {
+        flags: {},
+      }),
+    ];
+
+    ["audio", "audioFilters", "video", "videoFilters", "sizeFilters", "options"].forEach(
+      function (key) {
+        clone._currentOutput[key] = self._currentOutput[key].clone();
+      }
+    );
+
+    if (this._currentOutput.sizeData) {
+      clone._currentOutput.sizeData = {};
+      utils.copy(this._currentOutput.sizeData, clone._currentOutput.sizeData);
+    }
+
+    utils.copy(this._currentOutput.flags, clone._currentOutput.flags);
+  }
+
+  // Clone argument lists
+  ["_global", "_complexFilters"].forEach(function (prop: string) {
+    clone[prop] = self[prop].clone();
+  });
+
+  return clone;
+};
+
+/* Add methods from options submodules */
+
+import inputsCb from "./options/inputs";
+inputsCb(FfmpegCommand.prototype);
+import audioCb from "./options/audio";
+audioCb(FfmpegCommand.prototype);
+import videoCb from "./options/video";
+videoCb(FfmpegCommand.prototype);
+import videosizeCb from "./options/videosize";
+videosizeCb(FfmpegCommand.prototype);
+import outputCb from "./options/output";
+outputCb(FfmpegCommand.prototype);
+import customCb from "./options/custom";
+customCb(FfmpegCommand.prototype);
+import miscCb from "./options/misc";
+miscCb(FfmpegCommand.prototype);
+
+/* Add processor methods */
+import processorCb from "./processor";
+processorCb(FfmpegCommand.prototype);
+
+/* Add capabilities methods */
+import capabilitiesCb from "./capabilities";
+capabilitiesCb(FfmpegCommand.prototype);
+
+import ffprobeCb from "./ffprobe";
+ffprobeCb(FfmpegCommand.prototype);
+
+import recipesCb from "./recipes";
+recipesCb(FfmpegCommand.prototype);
+
+FfmpegCommand.setFfmpegPath = function (path: string) {
+  new FfmpegCommand().setFfmpegPath(path);
+};
+
+FfmpegCommand.setFfprobePath = function (path: string) {
+  new FfmpegCommand().setFfprobePath(path);
+};
+
+FfmpegCommand.setFlvtoolPath = function (path: string) {
+  new FfmpegCommand().setFlvtoolPath(path);
+};
+
+FfmpegCommand.availableFilters = FfmpegCommand.getAvailableFilters = function (
+  callback: (err: Error | null, filters?: any) => void
+) {
+  new FfmpegCommand().availableFilters(callback);
+};
+
+FfmpegCommand.availableCodecs = FfmpegCommand.getAvailableCodecs = function (
+  callback: (err: Error | null, codecs?: any) => void
+) {
+  new FfmpegCommand().availableCodecs(callback);
+};
+
+FfmpegCommand.availableFormats = FfmpegCommand.getAvailableFormats = function (
+  callback: (err: Error | null, formats?: any) => void
+) {
+  new FfmpegCommand().availableFormats(callback);
+};
+
+FfmpegCommand.availableEncoders = FfmpegCommand.getAvailableEncoders = function (
+  callback: (err: Error | null, encoders?: any) => void
+) {
+  new FfmpegCommand().availableEncoders(callback);
+};
+
+/* Add ffprobe methods */
+import ffprobe from "./ffprobe";
+ffprobe(FfmpegCommand.prototype);
+
+FfmpegCommand.ffprobe = function (file: string) {
+  var instance = new FfmpegCommand(file);
+  instance.ffprobe.apply(instance, Array.prototype.slice.call(arguments, 1));
+};
+
+/* Add processing recipes */
+import recipes from "./recipes";
+recipes(FfmpegCommand.prototype);
+
+export default FfmpegCommand as unknown as {
+  new (input?: any, options?: any): FfmpegCommandInterface;
+  (input?: any, options?: any): FfmpegCommandInterface;
+  prototype: FfmpegCommandInterface;
+  setFfmpegPath(path: string): void;
+  setFfprobePath(path: string): void;
+  setFlvtoolPath(path: string): void;
+  availableFilters(callback: (err: Error | null, filters?: any) => void): void;
+  getAvailableFilters(callback: (err: Error | null, filters?: any) => void): void;
+  availableCodecs(callback: (err: Error | null, codecs?: any) => void): void;
+  getAvailableCodecs(callback: (err: Error | null, codecs?: any) => void): void;
+  availableFormats(callback: (err: Error | null, formats?: any) => void): void;
+  getAvailableFormats(callback: (err: Error | null, formats?: any) => void): void;
+  availableEncoders(callback: (err: Error | null, encoders?: any) => void): void;
+  getAvailableEncoders(callback: (err: Error | null, encoders?: any) => void): void;
+  ffprobe(file: string, ...args: any[]): void;
+};

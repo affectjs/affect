@@ -1,0 +1,58 @@
+
+> nx run @affectjs/fluent-ffmpeg:test --no-color
+
+> pnpm test
+
+
+> @affectjs/fluent-ffmpeg@6.1.1 test /Volumes/ORICO/ws/prj/affectjs/affect/packages/@affectjs/fluent-ffmpeg
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90m/Volumes/ORICO/ws/prj/affectjs/affect/packages/@affectjs/fluent-ffmpeg[39m
+
+ [32m✓[39m test/utils.test.js [2m([22m[2m15 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/aliases.test.js [2m([22m[2m96 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [31m❯[39m test/capabilities.test.js [2m([22m[2m25 tests[22m[2m | [22m[31m6 failed[39m[2m | [22m[33m3 skipped[39m[2m)[22m[32m 12[2mms[22m[39m
+       [32m✓[39m should enable querying for available codecs[32m 1[2mms[22m[39m
+       [32m✓[39m should enable querying for available encoders[32m 0[2mms[22m[39m
+       [32m✓[39m should enable querying for available formats[32m 0[2mms[22m[39m
+       [32m✓[39m should enable querying for available filters[32m 0[2mms[22m[39m
+       [32m✓[39m should enable querying capabilities without instanciating a command[32m 0[2mms[22m[39m
+       [32m✓[39m should enable checking command arguments for available codecs, formats and encoders[32m 0[2mms[22m[39m
+       [32m✓[39m should check capabilities before running a command[32m 0[2mms[22m[39m
+[31m       [31m×[31m should allow manual definition of ffmpeg binary path[39m[32m 4[2mms[22m[39m
+[31m       [31m×[31m should allow static manual definition of ffmpeg binary path[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should look for ffmpeg in the PATH if FFMPEG_PATH is not defined[32m 0[2mms[22m[39m
+       [2m[90m↓[39m[22m should use FFMPEG_PATH if defined and valid
+       [32m✓[39m should fall back to searching in the PATH if FFMPEG_PATH is invalid[32m 0[2mms[22m[39m
+       [32m✓[39m should remember ffmpeg path[32m 0[2mms[22m[39m
+[31m       [31m×[31m should allow manual definition of ffprobe binary path[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should allow static manual definition of ffprobe binary path[39m[32m 0[2mms[22m[39m
+       [32m✓[39m should look for ffprobe in the PATH if FFPROBE_PATH is not defined[32m 0[2mms[22m[39m
+       [2m[90m↓[39m[22m should use FFPROBE_PATH if defined and valid
+       [32m✓[39m should fall back to searching in the PATH if FFPROBE_PATH is invalid[32m 0[2mms[22m[39m
+       [32m✓[39m should remember ffprobe path[32m 0[2mms[22m[39m
+[31m       [31m×[31m should allow manual definition of fflvtool binary path[39m[32m 0[2mms[22m[39m
+[31m       [31m×[31m should allow static manual definition of fflvtool binary path[39m[32m 0[2mms[22m[39m
+       [32m✓[39m should look for fflvtool in the PATH if FLVTOOL2_PATH is not defined[32m 0[2mms[22m[39m
+       [2m[90m↓[39m[22m should use FLVTOOL2_PATH if defined and valid
+       [32m✓[39m should fall back to searching in the PATH if FLVTOOL2_PATH is invalid[32m 0[2mms[22m[39m
+       [32m✓[39m should remember fflvtool path[32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m127 passed[39m[22m[2m | [22m[33m3 skipped[39m[90m (136)[39m
+[2m   Start at [22m 20:25:01
+[2m   Duration [22m 231ms[2m (transform 192ms, setup 149ms, import 97ms, tests 22ms, environment 0ms)[22m
+
+[41m[30m ELIFECYCLE [39m[49m [31mTest failed. See above for more details.[39m
+
+
+
+ NX   Running target test for project @affectjs/fluent-ffmpeg failed
+
+Failed tasks:
+
+- @affectjs/fluent-ffmpeg:test
+
+Hint: run the command with --verbose for more details.
+
