@@ -11,3 +11,6 @@
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
 
 <!-- nx configuration end-->
+
+<!-- wsxjs component development start-->
+<!-- Leave the start & end comments to automatically receive updates. -->

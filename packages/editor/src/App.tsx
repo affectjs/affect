@@ -1,52 +1,71 @@
-import { TimelineEditor } from "./components/Timeline/Timeline";
-import { VideoPreview, Controls } from "./components/Preview";
-import { Inspector } from "./components/Inspector";
+import { useTimelineStore, AssetLibrary, Toolbar, Inspector } from "@affectjs/editor-ui";
+import { TimelineEditor, VideoPreview, Controls } from "@affectjs/editor-video";
+import { ImageEditorView } from "@affectjs/editor-image";
 
-/**
- * Web视频编辑器主应用
- * 基于RFC-014设计
- *
- * 布局结构：
- * ┌─────────────────────────────────────┐
- * │  Header (Toolbar)                   │
- * ├────────────────────┬────────────────┤
- * │                    │                │
- * │  Preview           │  Inspector     │
- * │                    │                │
- * ├────────────────────┴────────────────┤
- * │                                     │
- * │  Timeline                           │
- * │                                     │
- * └─────────────────────────────────────┘
- */
 function App() {
+  const { editorMode, setEditorMode } = useTimelineStore();
+
   return (
-    <div className="h-screen w-screen flex flex-col bg-slate-900">
-      {/* Header / Toolbar */}
-      <header className="h-12 bg-slate-800 border-b border-slate-700 flex items-center px-4 text-white font-semibold shrink-0">
-        <span className="mr-4">Web Video Editor</span>
-        <span className="text-xs text-slate-400">基于RFC-014实现</span>
-      </header>
+    <div className="h-screen w-screen flex flex-col bg-slate-900 text-slate-200 overflow-hidden font-sans selection:bg-blue-500/30">
+      {/* Header / Sidebar / Main content layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <AssetLibrary />
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
-        {/* Preview + Inspector Row */}
-        <div className="h-[60%] flex border-b border-slate-700">
-          {/* Video Preview Area */}
-          <div className="flex-1 bg-black relative">
-            <VideoPreview />
-            <Controls />
-          </div>
+        {/* Main Editor Area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {editorMode === "video" ? (
+            <>
+              {/* Preview + Inspector Row */}
+              <div className="flex-1 flex min-h-0 overflow-hidden">
+                {/* Video Preview Area */}
+                <div className="flex-1 bg-black relative flex flex-col">
+                  <div className="flex-1 min-h-0 relative">
+                    <VideoPreview />
+                  </div>
+                  <Controls />
+                </div>
 
-          {/* Inspector Panel */}
-          <Inspector />
+                {/* Inspector Panel */}
+                <Inspector />
+              </div>
+
+              {/* Timeline + Toolbar Area */}
+              <div className="h-[40%] flex flex-col bg-slate-900 border-t border-slate-700">
+                <Toolbar />
+                <div className="flex-1 overflow-hidden relative">
+                  <TimelineEditor />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex overflow-hidden">
+              <ImageEditorView />
+              <Inspector />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Timeline Area */}
-        <div className="h-[40%]">
-          <TimelineEditor />
+      {/* App Status Bar */}
+      <footer className="h-6 bg-slate-950 border-t border-slate-800 flex items-center justify-between px-3 text-[10px] text-slate-500 shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            Browser Runtime Active
+          </span>
+          <button
+            onClick={() => setEditorMode(editorMode === "video" ? "image" : "video")}
+            className="uppercase tracking-widest font-bold text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-2 px-2 py-0.5 rounded hover:bg-slate-800 border border-transparent hover:border-slate-700"
+          >
+            Mode: {editorMode}
+            <span className="text-[8px] opacity-50 px-1 border border-slate-600 rounded">
+              Switch
+            </span>
+          </button>
         </div>
-      </main>
+        <div>RFC-008 & RFC-015 Unified Editor</div>
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,23 @@
+{
+  "name": "@affectjs/editor-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/editor-ui/src",
+  "projectType": "library",
+  "tags": ["type:ui", "platform:browser"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc",
+        "cwd": "packages/editor-ui"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint . --ext ts,tsx",
+        "cwd": "packages/editor-ui"
+      }
+    }
+  }
+}

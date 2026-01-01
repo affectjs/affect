@@ -1,78 +1,53 @@
-# RFC-005: @affectjs/runtime - AffectJS 运行时引擎
+# RFC-005: @affectjs/runtime-node - Node.js 兼容运行时引擎
 
 **状态**: ✅ Completed  
 **日期**: 2024-12-29  
 **完成日期**: 2025-12-29  
 **作者**: Albert Li  
-**相关问题**: 创建统一的媒体处理运行时，集成 fluent-ffmpeg 和 sharp
+**包名**: `@affectjs/runtime-node` (原 `@affectjs/runtime`)
 
 ## 摘要
 
-本文档描述了 **@affectjs/runtime**，一个统一的媒体处理运行时引擎，用于执行由 `@affectjs/dsl` 编译生成的代码。该运行时设计为：
-1. **多后端支持**: 自动选择最适合的后端（fluent-ffmpeg 用于视频/音频，sharp 用于图像）
-2. **统一 API**: 提供一致的接口，隐藏后端差异
-3. **智能路由**: 根据媒体类型和操作自动选择最优后端
-4. **性能优化**: 利用各后端的优势，提供最佳性能
+本文档描述了 **@affectjs/runtime-node**，这是一个专为 Node.js 和 Bun 等服务端环境设计的媒体处理运行时。它实现了 **@affectjs/core** 定义的标准 `Runtime` 接口。
 
-## 核心设计理念
+## 核心架构
 
-### 1. 后端抽象层
+系统拆分为三个核心包以支持多环境：
 
-运行时提供统一的操作接口，底层自动路由到不同的后端：
+1.  **@affectjs/core**: 定义核心接口 (`Runtime`, `InputSource`, `ExecutionResult`) 和类型。
+2.  **@affectjs/runtime-node**: Node.js/Bun 实现，使用 `fluent-ffmpeg` 和 `sharp` (Native)。
+3.  **@affectjs/runtime-browser**: 浏览器实现，使用 WASM (见 RFC-0003)。
 
-- **视频/音频处理**: 使用 `@affectjs/fluent-ffmpeg`
-- **图像处理**: 使用 `sharp`
-- **混合操作**: 智能选择或组合使用多个后端
-
-### 2. 自动后端选择
+### 接口定义 (Defined in @affectjs/core)
 
 ```typescript
-// 运行时根据媒体类型自动选择后端
-affect('video.mp4')  // → 使用 fluent-ffmpeg
-affect('image.jpg')  // → 使用 sharp
-```
+// 强类定义的输入源
+export type InputSource =
+  | string // 文件路径 (Node) 或 URL (Browser)
+  | ArrayBuffer // 内存数据
+  | Uint8Array // 内存数据
+  | Blob // 浏览器 Blob
+  | File // 浏览器 File
+  | ReadableStream; // 流式输入
 
-### 3. 统一操作映射
+export interface Runtime {
+  /**
+   * 执行 Affect DSL
+   * @param dsl - 编译后的 DSL 对象或 JSON 字符串
+   * @param inputs - (可选) 虚拟文件映射表，键为 ID，值为输入源
+   */
+  execute(dsl: AffectDSL | string, inputs?: Record<string, InputSource>): Promise<ExecutionResult>;
 
-DSL 中的操作自动映射到对应后端的 API：
-
-```typescript
-// DSL: resize 1280 720
-// 视频 → ffmpeg.size('1280x720')
-// 图像 → sharp.resize(1280, 720)
-```
-
-## 架构设计
-
-### 包结构
-
-```
-@affectjs/runtime/
-├── src/
-│   ├── index.ts           # 主入口
-│   ├── runtime.ts         # 运行时核心
-│   ├── backends/
-│   │   ├── fluent-ffmpeg.ts  # fluent-ffmpeg 适配器
-│   │   └── sharp.ts          # sharp 适配器
-│   ├── router.ts          # 后端路由逻辑
-│   └── types.ts           # 类型定义
-├── package.json
-└── README.md
-```
-
-### 核心组件
-
-#### 1. 运行时引擎 (Runtime)
-
-负责执行 DSL 编译后的代码，管理后端生命周期。
-
-```typescript
-interface Runtime {
-  execute(compiledCode: string): Promise<Result>;
   registerBackend(name: string, backend: Backend): void;
   getBackend(mediaType: MediaType): Backend;
 }
 ```
+
+### 核心组件 (runtime-node)
+
+#### 1. 运行时引擎 (RuntimeNode)
+
+负责实现核心接口，管理服务端后端。
 
 #### 2. 后端适配器 (Backend Adapters)
 
@@ -103,28 +78,29 @@ interface Router {
 ### 基础 API
 
 ```typescript
-import { affect, execute } from '@affectjs/runtime';
+import { affect, execute } from "@affectjs/runtime";
 
 // 方式 1: 直接执行 DSL 代码
 const result = await execute(compiledCode);
 
+// 方式 1.1: 传入虚拟输入 (支持 Node/Bun Buffer)
+const buffer = await Bun.file("video.mp4").arrayBuffer();
+const result = await execute(dsl, {
+  "my-video": buffer,
+});
+// result.output 将包含处理后的 Buffer/Stream
+
 // 方式 2: 使用 affect 函数（类似 DSL 语法）
-await affect('video.mp4')
-  .resize(1280, 720)
-  .encode('h264', 2000)
-  .save('output.mp4');
+await affect("video.mp4").resize(1280, 720).encode("h264", 2000).save("output.mp4");
 ```
 
 ### 后端选择 API
 
 ```typescript
-import { affect, useBackend } from '@affectjs/runtime';
+import { affect, useBackend } from "@affectjs/runtime";
 
 // 显式指定后端
-await affect('image.jpg')
-  .useBackend('sharp')
-  .resize(1920, 1080)
-  .save('output.jpg');
+await affect("image.jpg").useBackend("sharp").resize(1920, 1080).save("output.jpg");
 ```
 
 ### 批量处理 API
@@ -143,25 +119,25 @@ await affectBatch([
 
 ### 视频/音频操作 → fluent-ffmpeg
 
-| DSL 操作 | fluent-ffmpeg API |
-|---------|------------------|
-| `resize w h` | `.size('wxh')` |
+| DSL 操作             | fluent-ffmpeg API                        |
+| -------------------- | ---------------------------------------- |
+| `resize w h`         | `.size('wxh')`                           |
 | `encode codec param` | `.videoCodec(codec).videoBitrate(param)` |
-| `filter name value` | `.videoFilters('name=value')` |
-| `crop x y w h` | `.videoFilters('crop=w:h:x:y')` |
-| `rotate angle` | `.videoFilters('rotate=angle')` |
+| `filter name value`  | `.videoFilters('name=value')`            |
+| `crop x y w h`       | `.videoFilters('crop=w:h:x:y')`          |
+| `rotate angle`       | `.videoFilters('rotate=angle')`          |
 
 ### 图像操作 → sharp
 
-| DSL 操作 | sharp API |
-|---------|-----------|
-| `resize w h` | `.resize(w, h)` |
-| `encode format quality` | `.toFormat(format, { quality })` |
-| `filter grayscale` | `.greyscale()` |
-| `filter blur radius` | `.blur(radius)` |
-| `filter brightness value` | `.modulate({ brightness })` |
-| `crop x y w h` | `.extract({ left: x, top: y, width: w, height: h })` |
-| `rotate angle` | `.rotate(angle)` |
+| DSL 操作                  | sharp API                                            |
+| ------------------------- | ---------------------------------------------------- |
+| `resize w h`              | `.resize(w, h)`                                      |
+| `encode format quality`   | `.toFormat(format, { quality })`                     |
+| `filter grayscale`        | `.greyscale()`                                       |
+| `filter blur radius`      | `.blur(radius)`                                      |
+| `filter brightness value` | `.modulate({ brightness })`                          |
+| `crop x y w h`            | `.extract({ left: x, top: y, width: w, height: h })` |
+| `rotate angle`            | `.rotate(angle)`                                     |
 
 ## 实现细节
 
@@ -170,13 +146,13 @@ await affectBatch([
 ```typescript
 function detectMediaType(filePath: string): MediaType {
   const ext = path.extname(filePath).toLowerCase();
-  const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
-  const videoExts = ['.mp4', '.avi', '.mov', '.mkv', '.webm'];
-  const audioExts = ['.mp3', '.wav', '.aac', '.ogg'];
-  
-  if (imageExts.includes(ext)) return 'image';
-  if (videoExts.includes(ext)) return 'video';
-  if (audioExts.includes(ext)) return 'audio';
+  const imageExts = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"];
+  const videoExts = [".mp4", ".avi", ".mov", ".mkv", ".webm"];
+  const audioExts = [".mp3", ".wav", ".aac", ".ogg"];
+
+  if (imageExts.includes(ext)) return "image";
+  if (videoExts.includes(ext)) return "video";
+  if (audioExts.includes(ext)) return "audio";
   throw new Error(`Unsupported media type: ${ext}`);
 }
 ```
@@ -186,15 +162,15 @@ function detectMediaType(filePath: string): MediaType {
 ```typescript
 function routeBackend(mediaType: MediaType, operations: Operation[]): Backend {
   // 图像操作优先使用 sharp
-  if (mediaType === 'image') {
+  if (mediaType === "image") {
     return sharpBackend;
   }
-  
+
   // 视频/音频操作使用 fluent-ffmpeg
-  if (mediaType === 'video' || mediaType === 'audio') {
+  if (mediaType === "video" || mediaType === "audio") {
     return fluentFfmpegBackend;
   }
-  
+
   // 混合操作：根据主要操作类型选择
   const primaryOp = operations[0];
   if (isImageOperation(primaryOp)) {
@@ -207,13 +183,10 @@ function routeBackend(mediaType: MediaType, operations: Operation[]): Backend {
 ### 3. 操作转换
 
 ```typescript
-function convertOperation(
-  operation: DSLOperation,
-  backend: Backend
-): BackendOperation {
-  if (backend.name === 'sharp') {
+function convertOperation(operation: DSLOperation, backend: Backend): BackendOperation {
+  if (backend.name === "sharp") {
     return convertToSharpOperation(operation);
-  } else if (backend.name === 'fluent-ffmpeg') {
+  } else if (backend.name === "fluent-ffmpeg") {
     return convertToFfmpegOperation(operation);
   }
   throw new Error(`Unsupported backend: ${backend.name}`);
@@ -225,58 +198,56 @@ function convertOperation(
 ### 示例 1: 视频处理
 
 ```typescript
-import { affect } from '@affectjs/affect';
+import { affect } from "@affectjs/affect";
 
-await affect('input.mp4')
+await affect("input.mp4")
   .resize(1280, 720)
-  .encode('h264', 2000)
-  .encode('aac', 128)
-  .save('output.mp4');
+  .encode("h264", 2000)
+  .encode("aac", 128)
+  .save("output.mp4");
 ```
 
 ### 示例 2: 图像处理
 
 ```typescript
-import { affect } from '@affectjs/affect';
+import { affect } from "@affectjs/affect";
 
-await affect('photo.jpg')
+await affect("photo.jpg")
   .resize(1920, 1080)
-  .filter('grayscale')
-  .filter('brightness', 1.1)
-  .encode('jpeg', 90)
-  .save('output.jpg');
+  .filter("grayscale")
+  .filter("brightness", 1.1)
+  .encode("jpeg", 90)
+  .save("output.jpg");
 ```
 
 ### 示例 3: 执行编译后的 DSL 代码
 
 ```typescript
-import { execute } from '@affectjs/affect';
-import { compileDslFile } from '@affectjs/dsl';
+import { execute } from "@affectjs/affect";
+import { compileDslFile } from "@affectjs/dsl";
 
-const compiledCode = compileDslFile('video.affect');
+const compiledCode = compileDslFile("video.affect");
 const result = await execute(compiledCode);
 ```
 
 ### 示例 4: 批量处理
 
 ```typescript
-import { affectBatch } from '@affectjs/runtime';
+import { affectBatch } from "@affectjs/runtime";
 
 await affectBatch([
   {
-    input: 'video1.mp4',
-    output: 'compressed1.mp4',
+    input: "video1.mp4",
+    output: "compressed1.mp4",
     operations: [
-      { type: 'resize', width: 1280, height: 720 },
-      { type: 'encode', codec: 'h264', param: 2000 },
+      { type: "resize", width: 1280, height: 720 },
+      { type: "encode", codec: "h264", param: 2000 },
     ],
   },
   {
-    input: 'photo1.jpg',
-    output: 'resized1.jpg',
-    operations: [
-      { type: 'resize', width: 1920, height: 1080 },
-    ],
+    input: "photo1.jpg",
+    output: "resized1.jpg",
+    operations: [{ type: "resize", width: 1920, height: 1080 }],
   },
 ]);
 ```
@@ -382,6 +353,7 @@ await affectBatch([
 ## 变更日志
 
 ### 2025-12-29（完成）
+
 - ✅ 完成适配器模式重构，移除硬编码逻辑
 - ✅ 实现格式支持声明和基于格式的后端选择
 - ✅ 实现进度追踪功能（fluent-ffmpeg 和 sharp）
@@ -391,8 +363,8 @@ await affectBatch([
 - ✅ 添加完整的测试覆盖
 
 ### 2024-12-29（初始设计）
+
 - 初始设计：@affectjs/runtime 运行时引擎
 - 定义后端抽象层和适配器接口
 - 设计自动后端路由机制
 - 定义操作映射表
-

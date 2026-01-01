@@ -1,91 +1,105 @@
-import React from "react";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { Play, Pause, SkipBack, SkipForward, Scissors } from "lucide-react";
 import { useTimelineStore } from "../../store/timeline";
+import { Button } from "../ui/button";
 
-/**
- * 播放控制组件
- * 提供播放、暂停、跳转等控制功能
- */
 export const Controls: React.FC = () => {
-  const { currentTime, duration, isPlaying, setTime, setIsPlaying } =
+  const { isPlaying, setIsPlaying, currentTime, setTime, duration, selectedClipId, removeClip } =
     useTimelineStore();
 
-  // 格式化时间显示
-  const formatTime = (seconds: number): string => {
+  const tickerRef = useRef<number>();
+
+  useEffect(() => {
+    if (isPlaying) {
+      const startTime = performance.now();
+      const startCurrentTime = currentTime;
+
+      const tick = () => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        let nextTime = startCurrentTime + elapsed;
+
+        if (nextTime >= duration && duration > 0) {
+          nextTime = duration;
+          setIsPlaying(false);
+        }
+
+        setTime(nextTime);
+        tickerRef.current = requestAnimationFrame(tick);
+      };
+
+      tickerRef.current = requestAnimationFrame(tick);
+    } else {
+      if (tickerRef.current) cancelAnimationFrame(tickerRef.current);
+    }
+
+    return () => {
+      if (tickerRef.current) cancelAnimationFrame(tickerRef.current);
+    };
+  }, [isPlaying, duration, currentTime, setTime, setIsPlaying]);
+
+  const handleSplit = () => {
+    if (!selectedClipId) return;
+    console.log("Split at", currentTime);
+    // Split logic to be implemented
+  };
+
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // 播放/暂停切换
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  // 跳转到开始
-  const skipToStart = () => {
-    setTime(0);
-    setIsPlaying(false);
-  };
-
-  // 跳转到结束
-  const skipToEnd = () => {
-    setTime(duration);
-    setIsPlaying(false);
+    const ms = Math.floor((seconds % 1) * 10);
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${ms}`;
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-slate-800/90 backdrop-blur-sm p-4">
+    <div className="h-12 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-4 shrink-0">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={() => setTime(0)}>
+          <SkipBack size={18} />
+        </Button>
+        <Button
+          variant="primary"
+          size="icon"
+          className="rounded-full w-8 h-8"
+          onClick={() => setIsPlaying(!isPlaying)}
+        >
+          {isPlaying ? (
+            <Pause size={18} fill="currentColor" />
+          ) : (
+            <Play size={18} fill="currentColor" className="ml-0.5" />
+          )}
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => setTime(duration)}>
+          <SkipForward size={18} />
+        </Button>
+      </div>
+
       <div className="flex items-center gap-4">
-        {/* 播放控制按钮 */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={skipToStart}
-            className="p-2 hover:bg-slate-700 rounded-md transition-colors"
-            aria-label="跳转到开始"
-          >
-            <SkipBack className="w-5 h-5 text-white" />
-          </button>
+        <span className="text-xs font-mono text-slate-400">
+          <span className="text-slate-200">{formatTime(currentTime)}</span>
+          <span className="mx-1">/</span>
+          <span>{formatTime(duration)}</span>
+        </span>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSplit}
+          disabled={!selectedClipId}
+          className="gap-2"
+        >
+          <Scissors size={14} />
+          Split
+        </Button>
+      </div>
 
-          <button
-            onClick={togglePlayPause}
-            className="p-2 hover:bg-slate-700 rounded-md transition-colors"
-            aria-label={isPlaying ? "暂停" : "播放"}
-          >
-            {isPlaying ? (
-              <Pause className="w-5 h-5 text-white" />
-            ) : (
-              <Play className="w-5 h-5 text-white" />
-            )}
-          </button>
-
-          <button
-            onClick={skipToEnd}
-            className="p-2 hover:bg-slate-700 rounded-md transition-colors"
-            aria-label="跳转到结束"
-          >
-            <SkipForward className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {/* 时间显示 */}
-        <div className="flex-1 flex items-center gap-2">
-          <span className="text-sm text-white font-mono">
-            {formatTime(currentTime)}
-          </span>
-          <span className="text-sm text-slate-400">/</span>
-          <span className="text-sm text-slate-400 font-mono">
-            {formatTime(duration)}
-          </span>
-        </div>
-
-        {/* 进度条 */}
-        <div className="flex-[2] relative h-1 bg-slate-600 rounded-full overflow-hidden">
-          <div
-            className="absolute left-0 top-0 h-full bg-blue-500"
-            style={{ width: `${(currentTime / duration) * 100}%` }}
-          />
-        </div>
+      <div className="w-24 flex justify-end">
+        <Button
+          variant="danger"
+          size="icon"
+          onClick={() => selectedClipId && removeClip(selectedClipId)}
+          disabled={!selectedClipId}
+        >
+          <Scissors size={14} className="rotate-45" /> {/* Delete surrogate */}
+        </Button>
       </div>
     </div>
   );

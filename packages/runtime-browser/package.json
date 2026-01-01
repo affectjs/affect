@@ -1,0 +1,39 @@
+{
+  "name": "@affectjs/runtime-browser",
+  "version": "0.0.1",
+  "description": "Browser-side runtime for Affect DSL using WASM",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@affectjs/core": "workspace:^",
+    "@ffmpeg/core": "^0.12.6",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "@saschazar/wasm-heif": "^2.0.0",
+    "comlink": "^4.4.1",
+    "wasm-vips": "^0.0.16"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "vite-plugin-top-level-await": "^1.4.4",
+    "vite-plugin-wasm": "^3.3.0",
+    "vitest": "^1.0.0"
+  }
+}

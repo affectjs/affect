@@ -1,0 +1,13 @@
+{
+  "name": "@affectjs/editor-video",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@affectjs/editor-ui": "workspace:*",
+    "@xzdarcy/react-timeline-editor": "^0.1.9",
+    "lucide-react": "^0.562.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

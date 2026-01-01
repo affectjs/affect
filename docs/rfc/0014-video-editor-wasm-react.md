@@ -30,7 +30,7 @@
 ```
 前端框架: React 18+
 状态管理: Zustand / Jotai
-视频处理: FFmpeg.wasm
+运行时: @affectjs/browser-runtime (RFC-003 Implementataion)
 UI 组件: Radix UI / shadcn/ui
 样式: Tailwind CSS
 时间线: @xzdarcy/react-timeline-editor
@@ -136,149 +136,71 @@ packages/web-editor/
 ### 2. 核心数据模型
 
 ```typescript
-// Timeline 数据结构
-interface Timeline {
-  id: string;
-  duration: number; // 总时长（秒）
-  tracks: Track[]; // 轨道列表
-  currentTime: number; // 当前播放时间
-  zoom: number; // 缩放级别
-  frameRate: number; // 帧率（默认30fps）
+// 适配 @xzdarcy/react-timeline-editor 的数据结构
+import { TimelineRow, TimelineAction } from "@xzdarcy/react-timeline-editor";
+
+// 我们的业务数据通过 id 关联，或者扩展其类型
+interface EditorState {
+  // Timeline 组件所需的数据
+  editorData: TimelineRow[];
+  // 我们的业务数据 (如视频元数据)
+  effects: Record<string, TimelineEffect>;
 }
 
-interface Track {
+// 扩展 Effect 类型以包含我们的业务字段
+interface TimelineEffect {
   id: string;
-  type: "video" | "audio";
-  clips: Clip[];
-  muted: boolean;
-  locked: boolean;
-  height: number; // 轨道高度（px）
-}
-
-interface Clip {
-  id: string;
-  trackId: string;
-  file: File; // 原始文件
-  startTime: number; // 在时间线上的开始时间
-  duration: number; // 片段持续时间
-  trimStart: number; // 原视频的裁剪开始点
-  trimEnd: number; // 原视频的裁剪结束点
-  effects: Effect[]; // 应用的效果
-  volume: number; // 音量 0-1
-  metadata?: VideoMetadata;
-}
-
-interface Effect {
-  id: string;
-  type: "filter" | "transition" | "text";
   name: string;
-  params: Record<string, any>;
-  enabled: boolean;
-}
-
-interface VideoMetadata {
-  width: number;
-  height: number;
+  type: "video" | "audio";
+  fileSource: {
+    file: File;
+    url: string;
+  };
   duration: number;
-  codec: string;
-  bitrate: number;
-  fps: number;
 }
 ```
 
 ### 3. Timeline 组件设计
 
+### 3. Timeline 组件集成 (@xzdarcy/react-timeline-editor)
+
+我们将使用 `@xzdarcy/react-timeline-editor` 作为核心时间线组件，它提供了高性能的虚拟滚动和复杂的编辑交互。
+
 ```typescript
-// Timeline 主组件
-const Timeline: React.FC = () => {
-  const timeline = useTimelineStore();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// Components/Timeline/Timeline.tsx
+import { Timeline, TimelineState } from '@xzdarcy/react-timeline-editor';
+import { useTimelineStore } from '@/store/timeline';
+
+const TimelineEditor: React.FC = () => {
+  const { editorData, effects, scale, setEditorData } = useTimelineStore();
 
   return (
-    <div className="timeline-container">
-      {/* 时间刻度尺 */}
-      <Ruler
-        duration={timeline.duration}
-        zoom={timeline.zoom}
-        currentTime={timeline.currentTime}
+    <div className="timeline-wrapper">
+      <Timeline
+        scale={scale}
+        editorData={editorData}
+        effects={effects}
+        onChange={(data) => setEditorData(data)}
+        // 自定义渲染器: 可选，用于自定义 Clip 的外观 (如显示波形或缩略图)
+        // getScaleRender={(scale) => <CustomScale scale={scale} />}
+        // getActionRender={(action, row) => <CustomClip action={action} />}
+        autoScroll={true}
       />
-
-      {/* 轨道列表 */}
-      <div className="tracks">
-        {timeline.tracks.map(track => (
-          <Track
-            key={track.id}
-            track={track}
-            zoom={timeline.zoom}
-          />
-        ))}
-      </div>
-
-      {/* 播放头 */}
-      <Playhead
-        currentTime={timeline.currentTime}
-        zoom={timeline.zoom}
-      />
-    </div>
-  );
-};
-
-// Track 组件
-const Track: React.FC<{ track: Track; zoom: number }> = ({ track, zoom }) => {
-  return (
-    <div className="track" style={{ height: track.height }}>
-      <div className="track-header">
-        <button onClick={() => toggleMute(track.id)}>
-          {track.muted ? <MuteIcon /> : <UnmuteIcon />}
-        </button>
-        <span>{track.type}</span>
-      </div>
-
-      <div className="track-content">
-        {track.clips.map(clip => (
-          <Clip
-            key={clip.id}
-            clip={clip}
-            zoom={zoom}
-            onDrag={handleClipDrag}
-            onTrim={handleClipTrim}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Clip 组件
-const Clip: React.FC<ClipProps> = ({ clip, zoom, onDrag, onTrim }) => {
-  const x = clip.startTime * zoom;  // 像素位置
-  const width = clip.duration * zoom;
-
-  return (
-    <div
-      className="clip"
-      style={{
-        left: `${x}px`,
-        width: `${width}px`
-      }}
-      draggable
-      onDragStart={onDrag}
-    >
-      {/* 缩略图 */}
-      <ClipThumbnail file={clip.file} />
-
-      {/* 裁剪手柄 */}
-      <div className="trim-handle left" onMouseDown={onTrim} />
-      <div className="trim-handle right" onMouseDown={onTrim} />
-
-      {/* 片段信息 */}
-      <div className="clip-info">
-        {clip.file.name}
-      </div>
     </div>
   );
 };
 ```
+
+**为什么使用组件库?**
+
+1.  **复用复杂逻辑**: 拖拽吸附、多选移动、轨道管理等逻辑非常复杂，复用成熟库可节省大量时间。
+2.  **性能**: 该库内置了虚拟滚动 (Virtualization)，对于包含数百个片段的长视频编辑至关重要。
+3.  **定制性**: 提供了 `getActionRender` 等渲染钩子，我们依然可以完全自定义片段的视觉样式 (UI)，同时保留库的交互逻辑 (UX)。
+
+**React 最佳实践 (The React Way)**
+
+- **单向数据流**: UI (Timeline) 触发 `onChange` -> 更新 Store -> Store 触发重渲染。
+- **状态隔离**: 播放器的 `currentTime` 频繁变化，应与 Timeline 的结构数据 (Tracks/Clips) 分离，避免每次播放进度更新都导致整个 Timeline 重渲染。
 
 ### 4. FFmpeg.wasm 集成
 
@@ -297,7 +219,9 @@ class FFmpegService {
     this.ffmpeg = new FFmpeg();
 
     // 加载 FFmpeg.wasm
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd";
+    // 推荐方式: 本地打包 (Bundled)，避免依赖外部 CDN，确保离线可用和版本稳定性
+    // 使用 vite-plugin-wasm 处理 .wasm 文件加载
+    const baseURL = new URL("../assets/ffmpeg", import.meta.url).href;
     await this.ffmpeg.load({
       coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
@@ -769,7 +693,7 @@ self.onmessage = async (e) => {
 ### 阶段 1: 基础架构（1-2周）
 
 - [ ] 项目搭建（Vite + React + TypeScript）
-- [ ] FFmpeg.wasm 集成
+- [ ] 核心依赖集成 (@affectjs/browser-runtime)
 - [ ] 基础状态管理（Zustand）
 - [ ] UI 组件库集成（shadcn/ui）
 

@@ -18,7 +18,8 @@
     "prepare": "husky",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "dev:editor": "nx dev @affectjs/editor"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",

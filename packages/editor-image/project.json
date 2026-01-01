@@ -1,0 +1,16 @@
+{
+  "name": "@affectjs/editor-image",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/editor-image/src",
+  "projectType": "library",
+  "tags": ["type:sub-editor", "platform:browser"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc",
+        "cwd": "packages/editor-image"
+      }
+    }
+  }
+}

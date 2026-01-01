@@ -1,5 +1,5 @@
 {
-  "name": "@affectjs/runtime",
+  "name": "@affectjs/runtime-node",
   "version": "0.1.0",
   "description": "@affectjs/runtime - Unified media processing runtime engine (fluent-ffmpeg + sharp)",
   "keywords": [

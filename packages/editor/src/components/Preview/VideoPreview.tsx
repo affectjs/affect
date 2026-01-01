@@ -1,47 +1,68 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { useTimelineStore } from "../../store/timeline";
 
-/**
- * 视频预览组件
- * 负责显示当前编辑的视频预览
- */
 export const VideoPreview: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const { currentTime, isPlaying, setTime, setIsPlaying } = useTimelineStore();
+  const { currentTime, editorData, effects } = useTimelineStore();
 
-  // 同步时间线当前时间到视频
-  useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = currentTime;
-  }, [currentTime]);
-
-  // 同步播放状态
-  useEffect(() => {
-    if (!videoRef.current) return;
-
-    if (isPlaying) {
-      videoRef.current.play().catch((err) => {
-        console.error("播放失败:", err);
-        setIsPlaying(false);
-      });
-    } else {
-      videoRef.current.pause();
+  // Find all active clips at the current time
+  const activeClips = React.useMemo(() => {
+    const active = [];
+    for (const row of editorData) {
+      for (const action of row.actions) {
+        if (currentTime >= action.start && currentTime <= action.end) {
+          const effect = effects[action.effectId];
+          if (effect && (effect.type === "video" || effect.type === "image")) {
+            active.push({ action, effect });
+          }
+        }
+      }
     }
-  }, [isPlaying, setIsPlaying]);
-
-  // 处理视频时间更新
-  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    setTime(e.currentTarget.currentTime);
-  };
+    return active;
+  }, [currentTime, editorData, effects]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black">
-      <video
-        ref={videoRef}
-        className="max-w-full max-h-full"
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={() => setIsPlaying(false)}
-      />
+    <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
+      {/* Simulation of a Canvas/Render Area */}
+      <div className="relative w-[1280px] h-[720px] bg-slate-900 shadow-2xl scale-[0.4] md:scale-[0.6] lg:scale-[0.8] origin-center">
+        {activeClips.map(({ action, effect }) => {
+          const asset = effect.asset;
+          if (!asset) return null;
+
+          const props = effect.properties || { x: 0, y: 0, scale: 1, opacity: 1, rotation: 0 };
+          const style: React.CSSProperties = {
+            position: "absolute",
+            left: `${props.x}px`,
+            top: `${props.y}px`,
+            transform: `translate(-50%, -50%) scale(${props.scale}) rotate(${props.rotation}deg)`,
+            opacity: props.opacity,
+            maxWidth: "none", // Allow transform to handle sizing
+            pointerEvents: "none",
+          };
+
+          if (effect.type === "video") {
+            return (
+              <video
+                key={action.id}
+                src={asset.url}
+                style={style}
+                autoPlay
+                muted
+                loop
+                playsInline
+                ref={(el) => {
+                  if (el) el.currentTime = currentTime - action.start;
+                }}
+              />
+            );
+          }
+
+          if (effect.type === "image") {
+            return <img key={action.id} src={asset.url} alt={effect.name} style={style} />;
+          }
+
+          return null;
+        })}
+      </div>
     </div>
   );
 };
