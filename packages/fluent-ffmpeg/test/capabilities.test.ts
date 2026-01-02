@@ -312,6 +312,7 @@ describe("Capabilities", function () {
             },
           ],
           function (err: unknown) {
+            clearTimeout(timeoutId);
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
