@@ -406,10 +406,15 @@ describe("Capabilities", function () {
 
     it("should look for ffmpeg in the PATH if FFMPEG_PATH is not defined", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should look for ffmpeg in PATH did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         delete process.env.FFMPEG_PATH;
         ff._forgetPaths();
         ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -448,10 +453,15 @@ describe("Capabilities", function () {
 
     it("should fall back to searching in the PATH if FFMPEG_PATH is invalid", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should fall back to searching PATH did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         process.env.FFMPEG_PATH = "/nope/not-here/nothing-to-see-here";
         ff._forgetPaths();
         ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -471,6 +481,10 @@ describe("Capabilities", function () {
 
     it("should remember ffmpeg path", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should remember ffmpeg path did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         delete process.env.FFMPEG_PATH;
         ff._forgetPaths();
@@ -484,6 +498,7 @@ describe("Capabilities", function () {
             expect(ffmpeg.length).toBeGreaterThan(0);
 
             ff._getFfmpegPath(function (err: unknown, ffmpeg2: unknown) {
+              clearTimeout(timeoutId);
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();
@@ -497,6 +512,7 @@ describe("Capabilities", function () {
             });
             after = 1;
           } catch (e) {
+            clearTimeout(timeoutId);
             reject(e);
           }
         });
@@ -563,10 +579,15 @@ describe("Capabilities", function () {
 
     it("should look for ffprobe in the PATH if FFPROBE_PATH is not defined", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should look for ffprobe in PATH did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         delete process.env.FFPROBE_PATH;
         ff._forgetPaths();
         ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -604,10 +625,15 @@ describe("Capabilities", function () {
 
     it("should fall back to searching in the PATH if FFPROBE_PATH is invalid", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should fall back to searching PATH for ffprobe did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         process.env.FFPROBE_PATH = "/nope/not-here/nothing-to-see-here";
         ff._forgetPaths();
         ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -627,6 +653,10 @@ describe("Capabilities", function () {
 
     it("should remember ffprobe path", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should remember ffprobe path did not complete within 30 seconds"));
+        }, 30000);
+
         const ff = new Ffmpeg();
         delete process.env.FFPROBE_PATH;
         ff._forgetPaths();
@@ -639,6 +669,7 @@ describe("Capabilities", function () {
             expect(ffprobe.length).toBeGreaterThan(0);
 
             ff._getFfprobePath(function (err: unknown, ffprobe2: unknown) {
+              clearTimeout(timeoutId);
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();
@@ -652,6 +683,7 @@ describe("Capabilities", function () {
             });
             after = 1;
           } catch (e) {
+            clearTimeout(timeoutId);
             reject(e);
           }
         });
