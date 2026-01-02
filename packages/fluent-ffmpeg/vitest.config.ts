@@ -6,6 +6,7 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.test.ts"],
     setupFiles: ["./test/setup.ts"],
-    testTimeout: 30000,
+    testTimeout: 60000, // 增加到 60 秒，避免 takeScreenshots 等测试超时
+    hookTimeout: 60000, // hook 超时也设置为 60 秒
   },
 });

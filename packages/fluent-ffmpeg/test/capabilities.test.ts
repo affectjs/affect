@@ -21,7 +21,12 @@ describe("Capabilities", function () {
   describe("ffmpeg capabilities", function () {
     it("should enable querying for available codecs", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: getAvailableCodecs did not complete within 30 seconds"));
+        }, 30000);
+
         new Ffmpeg({ source: "" }).getAvailableCodecs(function (err: unknown, codecs: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -47,7 +52,12 @@ describe("Capabilities", function () {
 
     it("should enable querying for available encoders", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: getAvailableEncoders did not complete within 30 seconds"));
+        }, 30000);
+
         new Ffmpeg({ source: "" }).getAvailableEncoders(function (err: unknown, encoders: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -71,7 +81,12 @@ describe("Capabilities", function () {
 
     it("should enable querying for available formats", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: getAvailableFormats did not complete within 30 seconds"));
+        }, 30000);
+
         new Ffmpeg({ source: "" }).getAvailableFormats(function (err: unknown, formats: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -95,7 +110,12 @@ describe("Capabilities", function () {
 
     it("should enable querying for available filters", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: getAvailableFilters did not complete within 30 seconds"));
+        }, 30000);
+
         new Ffmpeg({ source: "" }).getAvailableFilters(function (err: unknown, filters: unknown) {
+          clearTimeout(timeoutId);
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -161,6 +181,10 @@ describe("Capabilities", function () {
 
     it("should enable checking command arguments for available codecs, formats and encoders", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: checking command arguments did not complete within 90 seconds"));
+        }, 90000);
+
         async.waterfall(
           [
             // Check with everything available
@@ -302,8 +326,13 @@ describe("Capabilities", function () {
 
     it("should check capabilities before running a command", function () {
       return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: check capabilities before running did not complete within 30 seconds"));
+        }, 30000);
+
         new Ffmpeg("/path/to/file.avi")
           .on("error", function (err: unknown) {
+            clearTimeout(timeoutId);
             try {
               expect(err.message).toMatch(/Output format invalid-output-format is not available/);
               resolve();

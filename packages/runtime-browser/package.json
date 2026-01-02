@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "eslint src"
   },
   "dependencies": {

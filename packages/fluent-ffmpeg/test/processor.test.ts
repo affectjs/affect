@@ -148,12 +148,20 @@ describe("Processor", function () {
 
     // Ensure all created files are removed
     await new Promise<void>((resolve) => {
+      if (createdFiles.length === 0) {
+        resolve();
+        return;
+      }
       async.each(
         createdFiles,
         function (file: unknown, cb: unknown) {
-          fs.exists(file, function (exists: unknown) {
-            if (exists) {
-              fs.unlink(file, cb);
+          // 使用 fs.access 替代已废弃的 fs.exists
+          fs.access(file as string, fs.constants.F_OK, (err) => {
+            if (!err) {
+              fs.unlink(file as string, (unlinkErr) => {
+                // 忽略删除错误，文件可能已被删除
+                cb();
+              });
             } else {
               if (outputs.length) {
                 testhelper.logOutput(outputs[0][0], outputs[0][1]);
@@ -169,12 +177,20 @@ describe("Processor", function () {
 
     // Ensure all created dirs are removed
     await new Promise<void>((resolve) => {
+      if (createdDirs.length === 0) {
+        resolve();
+        return;
+      }
       async.each(
         createdDirs,
         function (dir, cb) {
-          fs.exists(dir, function (exists: unknown) {
-            if (exists) {
-              fs.rmdir(dir, cb);
+          // 使用 fs.access 替代已废弃的 fs.exists，并使用 fs.rm 替代 fs.rmdir
+          fs.access(dir, fs.constants.F_OK, (err) => {
+            if (!err) {
+              fs.rm(dir, { recursive: true, force: true }, (rmErr) => {
+                // 忽略删除错误，目录可能已被删除
+                cb();
+              });
             } else {
               // Warn but don't fail
               cb();
@@ -272,9 +288,15 @@ describe("Processor", function () {
         const testFile = path.join(outdir, "testvideo.avi");
         createdFiles.push(testFile);
 
-        getCommand({ source: testfileName, logger: testhelper.logger, cwd: testdir })
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Test timeout: should change the working directory did not complete within 50 seconds"));
+        }, 50000);
+
+        const cmd = getCommand({ source: testfileName, logger: testhelper.logger, cwd: testdir });
+        cmd
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
+            clearTimeout(timeoutId);
             testhelper.logError(err, stdout, stderr);
             expect(err).toBeFalsy();
             reject(
@@ -284,6 +306,7 @@ describe("Processor", function () {
             );
           })
           .on("end", function () {
+            clearTimeout(timeoutId);
             resolve();
           })
           .saveToFile(testFile);
@@ -714,14 +737,26 @@ describe("Processor", function () {
         return new Promise<void>((resolve, reject) => {
           let filenamesCalled = false;
           const testFolder = path.join(outdir, "screenshots_" + name);
+          let timeoutId: NodeJS.Timeout | null = null;
+          let command: ReturnType<typeof getCommand> | null = null;
+
+          // 设置超时，防止测试卡住
+          timeoutId = setTimeout(() => {
+            if (command && command.ffmpegProc) {
+              command.ffmpegProc.kill("SIGKILL");
+            }
+            reject(new Error(`Test timeout: ${title} did not complete within 50 seconds`));
+          }, 50000);
 
           files.forEach(function (file) {
             createdFiles.push(path.join(testFolder, file));
           });
           createdDirs.push(testFolder);
 
-          getCommand({ source: testfile, logger: testhelper.logger })
+          command = getCommand({ source: testfile, logger: testhelper.logger });
+          command
             .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
+              if (timeoutId) clearTimeout(timeoutId);
               testhelper.logError(err, stdout, stderr);
               reject(
                 new Error(
@@ -737,12 +772,14 @@ describe("Processor", function () {
                   expect(file).toBe(files[index]);
                 });
               } catch (e) {
+                if (timeoutId) clearTimeout(timeoutId);
                 reject(
                   new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
                 );
               }
             })
             .on("end", function () {
+              if (timeoutId) clearTimeout(timeoutId);
               try {
                 expect(filenamesCalled).toBe(true);
               } catch (e) {
