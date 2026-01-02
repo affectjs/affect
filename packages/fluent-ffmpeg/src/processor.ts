@@ -224,7 +224,9 @@ export default function (proto: FfmpegCommandInterface & Record<string, any>) {
 
       ffmpegProc.on("exit", (code, signal) => {
         console.log("DEBUG: ffmpegProc exit:", code, signal);
-        if (code !== 0 && code !== 255 && signal !== "SIGKILL") {
+        // Exit codes 234, 255 are common for killed processes or invalid arguments
+        // SIGKILL means the process was intentionally killed
+        if (code !== 0 && code !== 255 && code !== 234 && signal !== "SIGKILL") {
           const stderr = stderrRing.get();
           const err = new Error(
             "ffmpeg exited with code " + code + ": " + utils.extractError(stderr)
@@ -303,4 +305,23 @@ export default function (proto: FfmpegCommandInterface & Record<string, any>) {
 
         return outStream;
       };
+
+  /**
+   * Kill current ffmpeg process, if any
+   *
+   * @method FfmpegCommand#kill
+   * @category Processing
+   *
+   * @param {String} [signal=SIGKILL] signal name
+   * @return FfmpegCommand
+   */
+  proto.kill = function (this: FfmpegCommandInterface, signal?: string) {
+    if (!this.ffmpegProc) {
+      this.logger.warn("No running ffmpeg process, cannot send signal");
+    } else {
+      this.ffmpegProc.kill(signal || "SIGKILL");
+    }
+
+    return this;
+  };
 }
