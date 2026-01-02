@@ -5,7 +5,7 @@ import vipsWasm from "wasm-vips/vips.wasm?url";
 
 interface VipsModule {
   Image: {
-    newFromFile: (path: string) => any;
+    newFromFile: (path: string) => unknown;
   };
   FS: {
     writeFile: (path: string, data: Uint8Array) => void;
@@ -103,7 +103,7 @@ export class WasmVipsBackend implements Backend {
     if (!this.ready || !this.vips) await this.initialize();
     if (!this.vips) throw new Error("Vips not initialized");
     // wasm-vips uses emscripten FS
-    (this.vips as any).FS.writeFile(name, data);
+    (this.vips as unknown).FS.writeFile(name, data);
   }
 
   async dispose(): Promise<void> {

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { fluentFfmpegBackend } from "../src/backends/fluent-ffmpeg";
+import { fluentFfmpegBackend } from "../src/backends/ffmpeg";
 import { sharpBackend } from "../src/backends/sharp";
 import type { ExecutionContext } from "../src/types";
 

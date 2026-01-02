@@ -12,7 +12,7 @@ export type MediaType = "video" | "audio" | "image";
 
 export interface Operation {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProgressInfo {

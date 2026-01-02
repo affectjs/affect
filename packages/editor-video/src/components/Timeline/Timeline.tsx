@@ -21,7 +21,7 @@ export const TimelineEditor: React.FC = () => {
           scale={scale}
           scaleSplitCount={scaleSplitCount}
           editorData={editorData}
-          effects={effects as any}
+          effects={effects as unknown}
           onChange={(data) => {
             setEditorData(data as TimelineRow[]);
           }}

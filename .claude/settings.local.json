@@ -19,7 +19,11 @@
       "WebSearch",
       "Bash(tree:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(pnpm nx test:*)",
+      "Bash(git restore:*)",
+      "Bash(git mv:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

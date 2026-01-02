@@ -28,21 +28,21 @@ const TestHelpers = {
   },
 
   logger: {
-    debug: function (arg: any) {
+    debug: function (arg: unknown) {
       if (process.env.FLUENTFFMPEG_COV !== "1") console.log("          [DEBUG] " + arg);
     },
-    info: function (arg: any) {
+    info: function (arg: unknown) {
       if (process.env.FLUENTFFMPEG_COV !== "1") console.log("          [INFO] " + arg);
     },
-    warn: function (arg: any) {
+    warn: function (arg: unknown) {
       if (process.env.FLUENTFFMPEG_COV !== "1") console.log("          [WARN] " + arg);
     },
-    error: function (arg: any) {
+    error: function (arg: unknown) {
       if (process.env.FLUENTFFMPEG_COV !== "1") console.log("          [ERROR] " + arg);
     },
   },
 
-  logArgError: function (err: any) {
+  logArgError: function (err: unknown) {
     if (err) {
       console.log("got error: " + (err.stack || err));
       if (err.ffmpegOut) {
@@ -60,7 +60,7 @@ const TestHelpers = {
     }
   },
 
-  logError: function (err: any, stdout?: string, stderr?: string) {
+  logError: function (err: unknown, stdout?: string, stderr?: string) {
     if (err) {
       console.log("got error: " + (err.stack || err));
       if (err.ffmpegOut) {

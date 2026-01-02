@@ -21,7 +21,7 @@ describe("Capabilities", function () {
   describe("ffmpeg capabilities", function () {
     it("should enable querying for available codecs", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: "" }).getAvailableCodecs(function (err: any, codecs: any) {
+        new Ffmpeg({ source: "" }).getAvailableCodecs(function (err: unknown, codecs: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -47,7 +47,7 @@ describe("Capabilities", function () {
 
     it("should enable querying for available encoders", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: "" }).getAvailableEncoders(function (err: any, encoders: any) {
+        new Ffmpeg({ source: "" }).getAvailableEncoders(function (err: unknown, encoders: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -71,7 +71,7 @@ describe("Capabilities", function () {
 
     it("should enable querying for available formats", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: "" }).getAvailableFormats(function (err: any, formats: any) {
+        new Ffmpeg({ source: "" }).getAvailableFormats(function (err: unknown, formats: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -95,7 +95,7 @@ describe("Capabilities", function () {
 
     it("should enable querying for available filters", function () {
       return new Promise<void>((resolve, reject) => {
-        new Ffmpeg({ source: "" }).getAvailableFilters(function (err: any, filters: any) {
+        new Ffmpeg({ source: "" }).getAvailableFilters(function (err: unknown, filters: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -123,21 +123,21 @@ describe("Capabilities", function () {
 
     it("should enable querying capabilities without instanciating a command", function () {
       return new Promise<void>((resolve, reject) => {
-        Ffmpeg.getAvailableCodecs(function (err: any, codecs: any) {
+        Ffmpeg.getAvailableCodecs(function (err: unknown, codecs: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
             expect(typeof codecs).toBe("object");
             expect(Object.keys(codecs).length).not.toBe(0);
 
-            Ffmpeg.getAvailableFilters(function (err: any, filters: any) {
+            Ffmpeg.getAvailableFilters(function (err: unknown, filters: unknown) {
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();
                 expect(typeof filters).toBe("object");
                 expect(Object.keys(filters).length).not.toBe(0);
 
-                Ffmpeg.getAvailableFormats(function (err: any, formats: any) {
+                Ffmpeg.getAvailableFormats(function (err: unknown, formats: unknown) {
                   testhelper.logError(err);
                   try {
                     expect(err).toBeFalsy();
@@ -164,7 +164,7 @@ describe("Capabilities", function () {
         async.waterfall(
           [
             // Check with everything available
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 .audioCodec("pcm_u16le")
@@ -174,13 +174,13 @@ describe("Capabilities", function () {
             },
 
             // Invalid input format
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("invalid-input-format")
                 .audioCodec("pcm_u16le")
                 .videoCodec("png")
                 .toFormat("mp4")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(
@@ -194,13 +194,13 @@ describe("Capabilities", function () {
             },
 
             // Invalid output format
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 .audioCodec("pcm_u16le")
                 .videoCodec("png")
                 .toFormat("invalid-output-format")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(
@@ -214,13 +214,13 @@ describe("Capabilities", function () {
             },
 
             // Invalid audio codec
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 .audioCodec("invalid-audio-codec")
                 .videoCodec("png")
                 .toFormat("mp4")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(/Audio codec invalid-audio-codec is not available/);
@@ -232,13 +232,13 @@ describe("Capabilities", function () {
             },
 
             // Invalid video codec
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 .audioCodec("pcm_u16le")
                 .videoCodec("invalid-video-codec")
                 .toFormat("mp4")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(/Video codec invalid-video-codec is not available/);
@@ -250,14 +250,14 @@ describe("Capabilities", function () {
             },
 
             // Invalid audio encoder
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 // Valid codec, but not a valid encoder for audio
                 .audioCodec("png")
                 .videoCodec("png")
                 .toFormat("mp4")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(/Audio codec png is not available/);
@@ -269,14 +269,14 @@ describe("Capabilities", function () {
             },
 
             // Invalid video encoder
-            function (cb: Function) {
+            function (cb: (...args: unknown[]) => unknown) {
               new Ffmpeg("/path/to/file.avi")
                 .fromFormat("avi")
                 .audioCodec("pcm_u16le")
                 // Valid codec, but not a valid encoder for video
                 .videoCodec("pcm_u16le")
                 .toFormat("mp4")
-                ._checkCapabilities(function (err: any) {
+                ._checkCapabilities(function (err: unknown) {
                   try {
                     expect(err).toBeTruthy();
                     expect(err.message).toMatch(/Video codec pcm_u16le is not available/);
@@ -287,7 +287,7 @@ describe("Capabilities", function () {
                 });
             },
           ],
-          function (err: any) {
+          function (err: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -303,7 +303,7 @@ describe("Capabilities", function () {
     it("should check capabilities before running a command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg("/path/to/file.avi")
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(err.message).toMatch(/Output format invalid-output-format is not available/);
               resolve();
@@ -344,7 +344,7 @@ describe("Capabilities", function () {
       return new Promise<void>((resolve, reject) => {
         const ff = new Ffmpeg();
         ff.setFfmpegPath("/doom/di/dom");
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -361,7 +361,7 @@ describe("Capabilities", function () {
       return new Promise<void>((resolve, reject) => {
         const ff = new Ffmpeg();
         Ffmpeg.setFfmpegPath("/doom/di/dom2");
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -379,7 +379,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         delete process.env.FFMPEG_PATH;
         ff._forgetPaths();
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -403,7 +403,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         process.env.FFMPEG_PATH = ALT_FFMPEG_PATH;
         ff._forgetPaths();
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -421,7 +421,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         process.env.FFMPEG_PATH = "/nope/not-here/nothing-to-see-here";
         ff._forgetPaths();
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -446,14 +446,14 @@ describe("Capabilities", function () {
         ff._forgetPaths();
         let after = 0;
 
-        ff._getFfmpegPath(function (err: any, ffmpeg: any) {
+        ff._getFfmpegPath(function (err: unknown, ffmpeg: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
             expect(typeof ffmpeg).toBe("string");
             expect(ffmpeg.length).toBeGreaterThan(0);
 
-            ff._getFfmpegPath(function (err: any, ffmpeg2: any) {
+            ff._getFfmpegPath(function (err: unknown, ffmpeg2: unknown) {
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();
@@ -501,7 +501,7 @@ describe("Capabilities", function () {
       return new Promise<void>((resolve, reject) => {
         const ff = new Ffmpeg();
         ff.setFfprobePath("/doom/di/dom");
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -518,7 +518,7 @@ describe("Capabilities", function () {
       return new Promise<void>((resolve, reject) => {
         const ff = new Ffmpeg();
         Ffmpeg.setFfprobePath("/doom/di/dom2");
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -536,7 +536,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         delete process.env.FFPROBE_PATH;
         ff._forgetPaths();
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -559,7 +559,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         process.env.FFPROBE_PATH = ALT_FFPROBE_PATH;
         ff._forgetPaths();
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -577,7 +577,7 @@ describe("Capabilities", function () {
         const ff = new Ffmpeg();
         process.env.FFPROBE_PATH = "/nope/not-here/nothing-to-see-here";
         ff._forgetPaths();
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
@@ -601,14 +601,14 @@ describe("Capabilities", function () {
         delete process.env.FFPROBE_PATH;
         ff._forgetPaths();
         let after = 0;
-        ff._getFfprobePath(function (err: any, ffprobe: any) {
+        ff._getFfprobePath(function (err: unknown, ffprobe: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
             expect(typeof ffprobe).toBe("string");
             expect(ffprobe.length).toBeGreaterThan(0);
 
-            ff._getFfprobePath(function (err: any, ffprobe2: any) {
+            ff._getFfprobePath(function (err: unknown, ffprobe2: unknown) {
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();
@@ -666,7 +666,7 @@ describe("Capabilities", function () {
         return new Promise<void>((resolve, reject) => {
           const ff = new Ffmpeg();
           ff.setFlvtoolPath("/doom/di/dom");
-          ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+          ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -686,7 +686,7 @@ describe("Capabilities", function () {
         return new Promise<void>((resolve, reject) => {
           const ff = new Ffmpeg();
           Ffmpeg.setFlvtoolPath("/doom/di/dom2");
-          ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+          ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -707,7 +707,7 @@ describe("Capabilities", function () {
           const ff = new Ffmpeg();
           delete process.env.FLVTOOL2_PATH;
           ff._forgetPaths();
-          ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+          ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -733,7 +733,7 @@ describe("Capabilities", function () {
           const ff = new Ffmpeg();
           process.env.FLVTOOL2_PATH = ALT_FLVTOOL_PATH;
           ff._forgetPaths();
-          ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+          ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -754,7 +754,7 @@ describe("Capabilities", function () {
           const ff = new Ffmpeg();
           process.env.FLVTOOL2_PATH = "/nope/not-here/nothing-to-see-here";
           ff._forgetPaths();
-          ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+          ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
             testhelper.logError(err);
             try {
               expect(err).toBeFalsy();
@@ -779,14 +779,14 @@ describe("Capabilities", function () {
         delete process.env.FLVTOOL2_PATH;
         ff._forgetPaths();
         let after = 0;
-        ff._getFlvtoolPath(function (err: any, fflvtool: any) {
+        ff._getFlvtoolPath(function (err: unknown, fflvtool: unknown) {
           testhelper.logError(err);
           try {
             expect(err).toBeFalsy();
             expect(typeof fflvtool).toBe("string");
             expect(fflvtool.length).toBeGreaterThan(0);
 
-            ff._getFlvtoolPath(function (err: any, fflvtool2: any) {
+            ff._getFlvtoolPath(function (err: unknown, fflvtool2: unknown) {
               testhelper.logError(err);
               try {
                 expect(err).toBeFalsy();

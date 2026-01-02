@@ -14,7 +14,7 @@ describe("Metadata", function () {
     testfile = path.join(__dirname, "assets", "testvideo-43.avi");
 
     return new Promise<void>((resolve, reject) => {
-      exec(testhelper.getFfmpegCheck(), function (err: any) {
+      exec(testhelper.getFfmpegCheck(), function (err: unknown) {
         if (!err) {
           // check if file exists
           fs.exists(testfile, function (exists) {
@@ -40,7 +40,7 @@ describe("Metadata", function () {
 
   it("should return ffprobe data as an object", function () {
     return new Promise<void>((resolve, reject) => {
-      Ffmpeg.ffprobe(testfile, function (err: any, data: any) {
+      Ffmpeg.ffprobe(testfile, function (err: unknown, data: unknown) {
         testhelper.logError(err);
         try {
           expect(err).toBeFalsy();
@@ -55,7 +55,7 @@ describe("Metadata", function () {
 
   it("should provide ffprobe format information", function () {
     return new Promise<void>((resolve, reject) => {
-      Ffmpeg.ffprobe(testfile, function (err: any, data: any) {
+      Ffmpeg.ffprobe(testfile, function (err: unknown, data: unknown) {
         testhelper.logError(err);
         try {
           expect(err).toBeFalsy();
@@ -75,7 +75,7 @@ describe("Metadata", function () {
 
   it("should provide ffprobe stream information", function () {
     return new Promise<void>((resolve, reject) => {
-      Ffmpeg.ffprobe(testfile, function (err: any, data: any) {
+      Ffmpeg.ffprobe(testfile, function (err: unknown, data: unknown) {
         testhelper.logError(err);
         try {
           expect(err).toBeFalsy();
@@ -95,7 +95,7 @@ describe("Metadata", function () {
 
   it("should provide ffprobe stream information with units", function () {
     return new Promise<void>((resolve, reject) => {
-      Ffmpeg.ffprobe(testfile, ["-unit"], function (err: any, data: any) {
+      Ffmpeg.ffprobe(testfile, ["-unit"], function (err: unknown, data: unknown) {
         testhelper.logError(err);
         try {
           expect(err).toBeFalsy();
@@ -114,7 +114,7 @@ describe("Metadata", function () {
 
   it("should return ffprobe errors", function () {
     return new Promise<void>((resolve, reject) => {
-      Ffmpeg.ffprobe("/path/to/missing/file", function (err: any) {
+      Ffmpeg.ffprobe("/path/to/missing/file", function (err: unknown) {
         try {
           expect(!!err).toBe(true);
           resolve();
@@ -127,7 +127,7 @@ describe("Metadata", function () {
 
   it("should enable calling ffprobe on a command with an input file", function () {
     return new Promise<void>((resolve, reject) => {
-      new Ffmpeg({ source: testfile }).ffprobe(function (err: any, data: any) {
+      new Ffmpeg({ source: testfile }).ffprobe(function (err: unknown, data: unknown) {
         testhelper.logError(err);
         try {
           expect(err).toBeFalsy();
@@ -146,7 +146,7 @@ describe("Metadata", function () {
 
   it("should fail calling ffprobe on a command without input", function () {
     return new Promise<void>((resolve, reject) => {
-      new Ffmpeg().ffprobe(function (err: any) {
+      new Ffmpeg().ffprobe(function (err: unknown) {
         try {
           expect(!!err).toBe(true);
           expect(err.message).toMatch(/No input specified/);
@@ -161,7 +161,7 @@ describe("Metadata", function () {
   it("should allow calling ffprobe on stream input", function () {
     return new Promise<void>((resolve, reject) => {
       const stream = fs.createReadStream(testfile);
-      new Ffmpeg().addInput(stream).ffprobe(function (err: any, data: any) {
+      new Ffmpeg().addInput(stream).ffprobe(function (err: unknown, data: unknown) {
         try {
           expect(err).toBeFalsy();
           expect(data.streams.length).toBe(1);

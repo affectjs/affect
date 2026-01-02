@@ -1,15 +1,53 @@
-/*jshint node:true*/
 import fs from "fs";
 import path from "path";
 import { PassThrough, Writable } from "stream";
 import async from "async";
-import utils from "./utils";
+import utils from "./utils.js";
+import { type FfmpegCommand } from "./utils.js";
+
+interface FfprobeData {
+  streams: {
+    codec_type: string;
+    width: number;
+    height: number;
+    duration: string | number;
+    bit_rate?: string | number;
+  }[];
+  format: {
+    duration: string | number;
+    bit_rate?: string | number;
+  };
+}
+
+interface FfmpegInput {
+  source: string | unknown;
+  isStream: boolean;
+  options: {
+    get(): string[];
+  };
+}
+
+interface SizeFilter {
+  inputs?: string;
+  outputs?: string;
+}
+
+interface FfmpegOutput {
+  sizeFilters: {
+    get(): SizeFilter[];
+    clear(): void;
+  };
+}
 
 /*
  * Useful recipes for commands
  */
 
-export default function recipes(proto: any) {
+/**
+ * Recipes component
+ * @param {Object} proto prototype to extend
+ */
+export default function (proto: Record<string, unknown>) {
   /**
    * Execute ffmpeg command and save output to a file
    *
@@ -20,7 +58,7 @@ export default function recipes(proto: any) {
    * @param {String} output file path
    * @return FfmpegCommand
    */
-  proto.saveToFile = proto.save = function (this: any, output: string) {
+  proto.saveToFile = proto.save = function (this: FfmpegCommand, output: string) {
     this.output(output).run();
     return this;
   };
@@ -43,22 +81,25 @@ export default function recipes(proto: any) {
   proto.writeToStream =
     proto.pipe =
     proto.stream =
-      function (this: any, stream?: Writable, options?: any) {
-        if (stream && !("writable" in stream)) {
-          options = stream;
-          stream = undefined;
+      function (this: FfmpegCommand, stream?: Writable, options?: Record<string, unknown>) {
+        let finalStream = stream;
+        let finalOptions = options;
+
+        if (finalStream && !("writable" in finalStream)) {
+          finalOptions = finalStream as unknown as Record<string, unknown>;
+          finalStream = undefined;
         }
 
-        if (!stream) {
+        if (!finalStream) {
           if (process.version.match(/v0\.8\./)) {
             throw new Error("PassThrough stream is not supported on node v0.8");
           }
 
-          stream = new PassThrough();
+          finalStream = new PassThrough();
         }
 
-        this.output(stream, options).run();
-        return stream;
+        this.output(finalStream, finalOptions).run();
+        return finalStream;
       };
 
   /**
@@ -100,74 +141,83 @@ export default function recipes(proto: any) {
     proto.thumbnails =
     proto.screenshot =
     proto.screenshots =
-      function (this: any, config: any, folder: string) {
-        var self = this;
-        var source = this._currentInput.source;
-        config = config || { count: 1 };
+      function (this: FfmpegCommand, config: unknown, folder: string) {
+        const source = (this._inputs[0] as unknown as FfmpegInput).source;
+        let finalConfig: Record<string, unknown>;
 
         // Accept a number of screenshots instead of a config object
         if (typeof config === "number") {
-          config = {
+          finalConfig = {
             count: config,
           };
+        } else {
+          finalConfig = (config as Record<string, unknown>) || { count: 1 };
         }
 
-        // Accept a second 'folder' parameter instead of config.folder
-        if (!("folder" in config)) {
-          config.folder = folder || ".";
+        // Accept a second 'folder' parameter instead of finalConfig.folder
+        if (!("folder" in finalConfig)) {
+          finalConfig.folder = folder || ".";
         }
 
         // Accept 'timestamps' instead of 'timemarks'
-        if ("timestamps" in config) {
-          config.timemarks = config.timestamps;
+        if ("timestamps" in finalConfig) {
+          finalConfig.timemarks = finalConfig.timestamps;
         }
 
         // Compute timemarks from count if not present
-        if (!("timemarks" in config)) {
-          if (!config.count) {
+        if (!("timemarks" in finalConfig)) {
+          if (!finalConfig.count) {
             throw new Error(
               "Cannot take screenshots: neither a count nor a timemark list are specified"
             );
           }
 
-          var interval = 100 / (1 + config.count);
-          config.timemarks = [];
-          for (var i = 0; i < config.count; i++) {
-            config.timemarks.push(interval * (i + 1) + "%");
+          const count = Number(finalConfig.count);
+          const interval = 100 / (1 + count);
+          finalConfig.timemarks = [];
+          for (let i = 0; i < count; i++) {
+            (finalConfig.timemarks as unknown[]).push(interval * (i + 1) + "%");
           }
         }
 
         // Parse size option
-        if ("size" in config) {
-          var fixedSize = config.size.match(/^(\d+)x(\d+)$/);
-          var fixedWidth = config.size.match(/^(\d+)x\?$/);
-          var fixedHeight = config.size.match(/^\?x(\d+)$/);
-          var percentSize = config.size.match(/^(\d+)%$/);
+        let fixedSize: RegExpMatchArray | null = null;
+        let fixedWidth: RegExpMatchArray | null = null;
+        let fixedHeight: RegExpMatchArray | null = null;
+        let percentSize: RegExpMatchArray | null = null;
+
+        if ("size" in finalConfig) {
+          const size = String(finalConfig.size);
+          fixedSize = size.match(/^(\d+)x(\d+)$/);
+          fixedWidth = size.match(/^(\d+)x\?$/);
+          fixedHeight = size.match(/^\?x(\d+)$/);
+          percentSize = size.match(/^(\d+)%$/);
 
           if (!fixedSize && !fixedWidth && !fixedHeight && !percentSize) {
-            throw new Error("Invalid size parameter: " + config.size);
+            throw new Error("Invalid size parameter: " + finalConfig.size);
           }
         }
 
         // Metadata helper
-        var metadata: any;
-        function getMetadata(cb: (err: Error | null, meta?: any) => void) {
+        let metadata: FfprobeData | undefined;
+        const getMetadata = (cb: (err: Error | null, meta?: FfprobeData) => void) => {
           if (metadata) {
             cb(null, metadata);
           } else {
-            self.ffprobe(function (err: Error, meta: any) {
-              metadata = meta;
-              cb(err, meta);
+            this.ffprobe((err: Error, meta: unknown) => {
+              metadata = meta as FfprobeData;
+              cb(err, metadata);
             });
           }
-        }
+        };
 
         async.waterfall(
           [
             // Compute percent timemarks if any
-            function computeTimemarks(next: Function) {
+            (next: (err?: Error | null) => void) => {
+              const timemarks = finalConfig.timemarks as unknown[];
               if (
-                config.timemarks.some(function (t: any) {
+                timemarks.some(function (t: unknown) {
                   return ("" + t).match(/^[\d.]+%$/);
                 })
               ) {
@@ -179,13 +229,16 @@ export default function recipes(proto: any) {
                   );
                 }
 
-                getMetadata(function (err, meta) {
-                  if (err) {
-                    next(err);
+                getMetadata((err, meta) => {
+                  if (err || !meta) {
+                    next(err || new Error("Could not get metadata"));
                   } else {
                     // Select video stream with the highest resolution
-                    var vstream = meta.streams.reduce(
-                      function (biggest: any, stream: any) {
+                    const vstream = meta.streams.reduce(
+                      function (
+                        biggest: { width: number; height: number; duration: string | number },
+                        stream
+                      ) {
                         if (
                           stream.codec_type === "video" &&
                           stream.width * stream.height > biggest.width * biggest.height
@@ -195,14 +248,14 @@ export default function recipes(proto: any) {
                           return biggest;
                         }
                       },
-                      { width: 0, height: 0 }
+                      { width: 0, height: 0, duration: 0 }
                     );
 
                     if (vstream.width === 0) {
                       return next(new Error("No video stream in input, cannot take screenshots"));
                     }
 
-                    var duration = Number(vstream.duration);
+                    let duration = Number(vstream.duration);
                     if (isNaN(duration)) {
                       duration = Number(meta.format.duration);
                     }
@@ -213,9 +266,9 @@ export default function recipes(proto: any) {
                       );
                     }
 
-                    config.timemarks = config.timemarks.map(function (mark: any) {
+                    finalConfig.timemarks = timemarks.map(function (mark: unknown) {
                       if (("" + mark).match(/^([\d.]+)%$/)) {
-                        return (duration * parseFloat(mark)) / 100;
+                        return (duration * parseFloat("" + mark)) / 100;
                       } else {
                         return mark;
                       }
@@ -230,10 +283,11 @@ export default function recipes(proto: any) {
             },
 
             // Turn all timemarks into numbers and sort them
-            function normalizeTimemarks(next: Function) {
-              config.timemarks = config.timemarks
-                .map(function (mark: string | number) {
-                  return utils.timemarkToSeconds(mark);
+            (next: (err?: Error | null) => void) => {
+              const timemarks = finalConfig.timemarks as unknown[];
+              finalConfig.timemarks = timemarks
+                .map(function (mark: unknown) {
+                  return utils.timemarkToSeconds(mark as string | number);
                 })
                 .sort(function (a: number, b: number) {
                   return a - b;
@@ -243,15 +297,16 @@ export default function recipes(proto: any) {
             },
 
             // Add '_%i' to pattern when requesting multiple screenshots and no variable token is present
-            function fixPattern(next: Function) {
-              var pattern = config.filename || "tn.png";
+            (next: (err: Error | null, pattern?: string) => void) => {
+              const timemarks = finalConfig.timemarks as unknown[];
+              let pattern = (finalConfig.filename as string) || "tn.png";
 
               if (pattern.indexOf(".") === -1) {
                 pattern += ".png";
               }
 
-              if (config.timemarks.length > 1 && !pattern.match(/%(s|0*i)/)) {
-                var ext = path.extname(pattern);
+              if (timemarks.length > 1 && !pattern.match(/%(s|0*i)/)) {
+                const ext = path.extname(pattern);
                 pattern = path.join(
                   path.dirname(pattern),
                   path.basename(pattern, ext) + "_%i" + ext
@@ -262,7 +317,7 @@ export default function recipes(proto: any) {
             },
 
             // Replace filename tokens (%f, %b) in pattern
-            function replaceFilenameTokens(pattern: string, next: Function) {
+            (pattern: string, next: (err: Error | null, pattern?: string) => void) => {
               if (pattern.match(/%[bf]/)) {
                 if (typeof source !== "string") {
                   return next(new Error("Cannot replace %f or %b when using an input stream"));
@@ -277,21 +332,25 @@ export default function recipes(proto: any) {
             },
 
             // Compute size if needed
-            function getSize(pattern: string, next: Function) {
+            (
+              pattern: string,
+              next: (err: Error | null, pattern?: string, width?: number, height?: number) => void
+            ) => {
               if (pattern.match(/%[whr]/)) {
                 if (fixedSize) {
-                  return next(null, pattern, fixedSize[1], fixedSize[2]);
+                  return next(null, pattern, Number(fixedSize[1]), Number(fixedSize[2]));
                 }
 
-                getMetadata(function (err, meta) {
-                  if (err) {
+                getMetadata((err, meta) => {
+                  if (err || !meta) {
                     return next(
-                      new Error("Could not determine video resolution to replace %w, %h or %r")
+                      err ||
+                        new Error("Could not determine video resolution to replace %w, %h or %r")
                     );
                   }
 
-                  var vstream = meta.streams.reduce(
-                    function (biggest: any, stream: any) {
+                  const vstream = meta.streams.reduce(
+                    function (biggest: { width: number; height: number }, stream) {
                       if (
                         stream.codec_type === "video" &&
                         stream.width * stream.height > biggest.width * biggest.height
@@ -308,8 +367,8 @@ export default function recipes(proto: any) {
                     return next(new Error("No video stream in input, cannot replace %w, %h or %r"));
                   }
 
-                  var width = vstream.width;
-                  var height = vstream.height;
+                  let width = vstream.width;
+                  let height = vstream.height;
 
                   if (fixedWidth) {
                     height = (height * Number(fixedWidth[1])) / width;
@@ -330,12 +389,12 @@ export default function recipes(proto: any) {
             },
 
             // Replace size tokens (%w, %h, %r) in pattern
-            function replaceSizeTokens(
+            (
               pattern: string,
               width: number,
               height: number,
-              next: Function
-            ) {
+              next: (err: Error | null, pattern?: string) => void
+            ) => {
               pattern = pattern
                 .replace(/%r/g, "%wx%h")
                 .replace(/%w/g, String(width))
@@ -345,26 +404,28 @@ export default function recipes(proto: any) {
             },
 
             // Replace variable tokens in pattern (%s, %i) and generate filename list
-            function replaceVariableTokens(pattern: string, next: Function) {
-              var filenames = config.timemarks.map(function (t: any, i: number) {
+            (pattern: string, next: (err: Error | null, filenames?: string[]) => void) => {
+              const timemarks = finalConfig.timemarks as unknown[];
+              const filenames = timemarks.map((t: unknown, i: number) => {
                 return pattern
-                  .replace(/%s/g, String(utils.timemarkToSeconds(t)))
-                  .replace(/%(0*)i/g, function (match: any, padding: string) {
-                    var idx = "" + (i + 1);
+                  .replace(/%s/g, String(utils.timemarkToSeconds(t as string | number)))
+                  .replace(/%(0*)i/g, function (_match: unknown, padding: string) {
+                    const idx = "" + (i + 1);
                     return padding.substr(0, Math.max(0, padding.length + 1 - idx.length)) + idx;
                   });
               });
 
-              self.emit("filenames", filenames);
+              this.emit("filenames", filenames);
               next(null, filenames);
             },
 
             // Create output directory
-            function createDirectory(filenames: string[], next: Function) {
-              fs.access(config.folder, fs.constants.F_OK, function (err) {
+            (filenames: string[], next: (err: Error | null, filenames?: string[]) => void) => {
+              const folderStr = String(finalConfig.folder);
+              fs.access(folderStr, fs.constants.F_OK, function (err) {
                 if (err) {
                   // Directory doesn't exist, create it
-                  fs.mkdir(config.folder, function (mkdirErr) {
+                  fs.mkdir(folderStr, function (mkdirErr) {
                     if (mkdirErr) {
                       next(mkdirErr);
                     } else {
@@ -378,28 +439,30 @@ export default function recipes(proto: any) {
               });
             },
           ],
-          function runCommand(err: any, filenames: any) {
+          (err: unknown, filenames: unknown) => {
             if (err) {
-              return self.emit("error", err);
+              return this.emit("error", err as Error);
             }
 
-            var count = config.timemarks.length;
-            var split: any;
-            var filters = [
-              (split = {
-                filter: "split",
-                options: count,
-                outputs: [] as string[],
-              }),
-            ];
+            const timemarks = finalConfig.timemarks as unknown[];
+            const count = timemarks.length;
+            const filenamesList = filenames as string[];
+            const split = {
+              filter: "split",
+              options: count,
+              outputs: [] as string[],
+              inputs: undefined as string | undefined,
+            };
+            let filters: Record<string, unknown>[] = [split as unknown as Record<string, unknown>];
 
-            if ("size" in config) {
+            if ("size" in finalConfig) {
               // Set size to generate size filters
-              self.size(config.size);
+              this.size(String(finalConfig.size));
 
               // Get size filters and chain them with 'sizeN' stream names
-              var sizeFilters = self._currentOutput.sizeFilters.get().map(function (
-                f: any,
+              const currentOutput = this._currentOutput as unknown as FfmpegOutput;
+              const sizeFilters = currentOutput.sizeFilters.get().map(function (
+                f: SizeFilter,
                 i: number
               ) {
                 if (i > 0) {
@@ -415,31 +478,33 @@ export default function recipes(proto: any) {
               split.inputs = "size" + (sizeFilters.length - 1);
 
               // Add size filters in front of split filter
-              filters = sizeFilters.concat(filters);
+              filters = (sizeFilters as unknown as Record<string, unknown>[]).concat(filters);
 
               // Remove size filters
-              self._currentOutput.sizeFilters.clear();
+              currentOutput.sizeFilters.clear();
             }
 
-            var first = 0;
-            for (var i = 0; i < count; i++) {
-              var stream = "screen" + i;
+            let firstMark = 0;
+            for (let i = 0; i < count; i++) {
+              const stream = "screen" + i;
               split.outputs.push(stream);
 
               if (i === 0) {
-                first = config.timemarks[i];
-                self.seekInput(first);
+                firstMark = timemarks[i] as number;
+                this.seekInput(firstMark);
               }
 
-              self.output(path.join(config.folder, filenames[i])).frames(1).map(stream);
+              this.output(path.join(String(finalConfig.folder), filenamesList[i]))
+                .frames(1)
+                .map(stream);
 
               if (i > 0) {
-                self.seek(config.timemarks[i] - first);
+                this.seek((timemarks[i] as number) - firstMark);
               }
             }
 
-            self.complexFilter(filters);
-            self.run();
+            this.complexFilter(filters);
+            this.run();
           }
         );
 
@@ -449,9 +514,9 @@ export default function recipes(proto: any) {
   /**
    * Merge (concatenate) inputs to a single file
    *
-   * @method FfmpegCommand#concat
+   * @method FfmpegCommand#mergeToFile
    * @category Processing
-   * @aliases concatenate,mergeToFile
+   * @aliases concatenate,concat
    *
    * @param {String|Writable} target output file or writable stream
    * @param {Object} [options] pipe options (only used when outputting to a writable stream)
@@ -460,33 +525,37 @@ export default function recipes(proto: any) {
   proto.mergeToFile =
     proto.concatenate =
     proto.concat =
-      function (this: any, target: string | Writable, options?: any) {
-        // Find out which streams are present in the first non-stream input
-        var fileInput = this._inputs.filter(function (input: any) {
+      function (this: FfmpegCommand, target: string | Writable, options?: Record<string, unknown>) {
+        const inputs = this._inputs as unknown as FfmpegInput[];
+        if (inputs.some((input) => input.isStream)) {
+          return this.emit("error", new Error("Cannot merge streams, only files can be merged"));
+        }
+
+        const fileInput = inputs.filter(function (input) {
           return !input.isStream;
         })[0];
 
-        var self = this;
-        this.ffprobe(this._inputs.indexOf(fileInput), function (err: Error, data: any) {
+        this.ffprobe(this._inputs.indexOf(fileInput), (err: Error, data: unknown) => {
           if (err) {
-            return self.emit("error", err);
+            return this.emit("error", err);
           }
 
-          var hasAudioStreams = data.streams.some(function (stream: any) {
+          const ffData = data as FfprobeData;
+
+          const hasAudioStreams = ffData.streams.some(function (stream: { codec_type: string }) {
             return stream.codec_type === "audio";
           });
 
-          var hasVideoStreams = data.streams.some(function (stream: any) {
+          const hasVideoStreams = ffData.streams.some(function (stream: { codec_type: string }) {
             return stream.codec_type === "video";
           });
 
           // Setup concat filter and start processing
-          self
-            .output(target, options)
+          this.output(target, options)
             .complexFilter({
               filter: "concat",
               options: {
-                n: self._inputs.length,
+                n: inputs.length,
                 v: hasVideoStreams ? 1 : 0,
                 a: hasAudioStreams ? 1 : 0,
               },

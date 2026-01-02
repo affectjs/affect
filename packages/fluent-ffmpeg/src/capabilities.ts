@@ -3,91 +3,69 @@ import fs from "fs";
 import path from "path";
 import async from "async";
 import utils from "./utils";
+import type { FfmpegCommand as FfmpegCommandInterface } from "./utils";
 
 /*
  *! Capability helpers
  */
 
-var avCodecRegexp = /^\s*([D ])([E ])([VAS])([S ])([D ])([T ]) ([^ ]+) +(.*)$/;
-var ffCodecRegexp = /^\s*([D\.])([E\.])([VAS])([I\.])([L\.])([S\.]) ([^ ]+) +(.*)$/;
-var ffEncodersRegexp = /\(encoders:([^\)]+)\)/;
-var ffDecodersRegexp = /\(decoders:([^\)]+)\)/;
-var encodersRegexp = /^\s*([VAS\.])([F\.])([S\.])([X\.])([B\.])([D\.]) ([^ ]+) +(.*)$/;
-var formatRegexp = /^\s*([D ])([E ])\s+([^ ]+)\s+(.*)$/;
-var lineBreakRegexp = /\r\n|\r|\n/;
-var filterRegexp = /^(?: [T\.][S\.][C\.] )?([^ ]+) +(AA?|VV?|\|)->(AA?|VV?|\|) +(.*)$/;
+const avCodecRegexp = /^\s*([D ])([E ])([VAS])([S ])([D ])([T ]) ([^ ]+) +(.*)$/;
+const ffCodecRegexp = /^\s*([D.])([E.])([VAS])([I.])([L.])([S.]) ([^ ]+) +(.*)$/;
+const ffEncodersRegexp = /\(encoders:([^)]+)\)/;
+const ffDecodersRegexp = /\(decoders:([^)]+)\)/;
+const encodersRegexp = /^\s*([VAS.])([F.])([S.])([X.])([B.])([D.]) ([^ ]+) +(.*)$/;
+const formatRegexp = /^\s*([D ])([E ])\s+([^ ]+)\s+(.*)$/;
+const lineBreakRegexp = /\r\n|\r|\n/;
+const filterRegexp = /^(?: [T.][S.][C.] )?([^ ]+) +(AA?|VV?|\|)->(AA?|VV?|\|) +(.*)$/;
 
-var cache: Record<string, any> = {};
+const cache: Record<string, unknown> = {};
 
-export default function (proto: any) {
+export default function (proto: Record<string, unknown>) {
   /**
    * Manually define the ffmpeg binary full path.
-   *
-   * @method FfmpegCommand#setFfmpegPath
-   *
-   * @param {String} ffmpegPath The full path to the ffmpeg binary.
-   * @return FfmpegCommand
    */
-  proto.setFfmpegPath = function (ffmpegPath: string) {
+  proto.setFfmpegPath = function (this: FfmpegCommandInterface, ffmpegPath: string) {
     cache.ffmpegPath = ffmpegPath;
     return this;
   };
 
   /**
    * Manually define the ffprobe binary full path.
-   *
-   * @method FfmpegCommand#setFfprobePath
-   *
-   * @param {String} ffprobePath The full path to the ffprobe binary.
-   * @return FfmpegCommand
    */
-  proto.setFfprobePath = function (ffprobePath: string) {
+  proto.setFfprobePath = function (this: FfmpegCommandInterface, ffprobePath: string) {
     cache.ffprobePath = ffprobePath;
     return this;
   };
 
   /**
    * Manually define the flvtool2/flvmeta binary full path.
-   *
-   * @method FfmpegCommand#setFlvtoolPath
-   *
-   * @param {String} flvtool The full path to the flvtool2 or flvmeta binary.
-   * @return FfmpegCommand
    */
-  proto.setFlvtoolPath = function (flvtool: string) {
+  proto.setFlvtoolPath = function (this: FfmpegCommandInterface, flvtool: string) {
     cache.flvtoolPath = flvtool;
     return this;
   };
 
   /**
    * Forget executable paths
-   *
-   * (only used for testing purposes)
-   *
-   * @method FfmpegCommand#_forgetPaths
-   * @private
    */
   proto._forgetPaths = function () {
     delete cache.ffmpegPath;
     delete cache.ffprobePath;
     delete cache.flvtoolPath;
     delete cache.ffmpegVersion;
+    delete cache.codecs;
+    delete cache.formats;
+    delete cache.encoders;
+    delete cache.filters;
   };
 
   /**
    * Get ffmpeg version
-   *
-   * Detects the installed ffmpeg version by running 'ffmpeg -version'
-   * and parsing the version string. The result is cached.
-   *
-   * @method FfmpegCommand#_getFfmpegVersion
-   * @param {Function} callback callback with signature (err, version)
-   *   version is an object with {major, minor, patch, full} properties
-   * @private
    */
-  proto._getFfmpegVersion = function (callback: (err: Error | null, version?: any) => void) {
-    var self = this;
-
+  proto._getFfmpegVersion = function (
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, version?: unknown) => void
+  ) {
     if ("ffmpegVersion" in cache) {
       return callback(null, cache.ffmpegVersion);
     }
@@ -95,15 +73,14 @@ export default function (proto: any) {
     this._spawnFfmpeg(
       ["-version"],
       { captureStdout: true, stdoutLines: 10 },
-      function (err: Error | null, stdoutRing: any) {
-        if (err) {
+      (err: Error | null, _fp, stdoutRing) => {
+        if (err || !stdoutRing) {
           return callback(err);
         }
 
-        var stdout = stdoutRing.get();
-        // Parse version from output like "ffmpeg version 4.4.2" or "ffmpeg version n4.4.2"
-        var versionMatch = stdout.match(/ffmpeg version (?:n)?(\d+)\.(\d+)(?:\.(\d+))?/);
-        var version = null;
+        const stdout = stdoutRing.get();
+        const versionMatch = stdout.match(/ffmpeg version (?:n)?(\d+)\.(\d+)(?:\.(\d+))?/);
+        let version = null;
 
         if (versionMatch) {
           version = {
@@ -121,250 +98,144 @@ export default function (proto: any) {
 
   /**
    * Check for ffmpeg availability
-   *
-   * If the FFMPEG_PATH environment variable is set, try to use it.
-   * If it is unset or incorrect, try to find ffmpeg in the PATH instead.
-   *
-   * @method FfmpegCommand#_getFfmpegPath
-   * @param {Function} callback callback with signature (err, path)
-   * @private
    */
   proto._getFfmpegPath = function (callback: (err: Error | null, path?: string) => void) {
     if ("ffmpegPath" in cache) {
-      return callback(null, cache.ffmpegPath);
+      return callback(null, cache.ffmpegPath as string);
     }
 
     async.waterfall(
       [
-        // Try FFMPEG_PATH
-        function (cb: (err: Error | null, path: string) => void) {
+        // Try PATH, but only if FFMPEG_PATH is not set correctly
+        (cb: (err: Error | null, p: string) => void) => {
           if (process.env.FFMPEG_PATH) {
-            fs.access(process.env.FFMPEG_PATH, fs.constants.F_OK, function (err) {
-              if (!err) {
-                cb(null, process.env.FFMPEG_PATH!);
-              } else {
-                cb(null, "");
-              }
+            fs.access(process.env.FFMPEG_PATH, fs.constants.F_OK, (err) => {
+              cb(null, !err ? process.env.FFMPEG_PATH! : "");
             });
           } else {
             cb(null, "");
           }
         },
-
-        // Search in the PATH
-        function (ffmpeg: string, cb: (err: Error | null, path: string) => void) {
-          if (ffmpeg.length) {
-            return cb(null, ffmpeg);
-          }
-
-          utils.which("ffmpeg", function (err, ffmpeg) {
-            cb(err, ffmpeg!);
-          });
+        (ffmpeg: string, cb: (err: Error | null, p: string) => void) => {
+          if (ffmpeg.length) return cb(null, ffmpeg);
+          utils.which("ffmpeg", (err, result) => cb(null, result || ""));
         },
       ],
-      function (err: Error | null, ffmpeg: string) {
-        if (err) {
-          callback(err);
-        } else {
-          callback(null, (cache.ffmpegPath = ffmpeg || ""));
-        }
+      (err, result) => {
+        if (err) return callback(err);
+        if (result) cache.ffmpegPath = result;
+        callback(null, result);
       }
     );
   };
 
   /**
    * Check for ffprobe availability
-   *
-   * If the FFPROBE_PATH environment variable is set, try to use it.
-   * If it is unset or incorrect, try to find ffprobe in the PATH instead.
-   * If this still fails, try to find ffprobe in the same directory as ffmpeg.
-   *
-   * @method FfmpegCommand#_getFfprobePath
-   * @param {Function} callback callback with signature (err, path)
-   * @private
    */
-  proto._getFfprobePath = function (callback: (err: Error | null, path?: string) => void) {
-    var self = this;
-
+  proto._getFfprobePath = function (
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, path?: string) => void
+  ) {
     if ("ffprobePath" in cache) {
-      return callback(null, cache.ffprobePath);
+      return callback(null, cache.ffprobePath as string);
     }
 
     async.waterfall(
       [
-        // Try FFPROBE_PATH
-        function (cb: (err: Error | null, path: string) => void) {
+        (cb: (err: Error | null, p: string) => void) => {
           if (process.env.FFPROBE_PATH) {
-            fs.access(process.env.FFPROBE_PATH, fs.constants.F_OK, function (err) {
+            fs.access(process.env.FFPROBE_PATH, fs.constants.F_OK, (err) => {
               cb(null, !err ? process.env.FFPROBE_PATH! : "");
             });
           } else {
             cb(null, "");
           }
         },
-
-        // Search in the PATH
-        function (ffprobe: string, cb: (err: Error | null, path: string) => void) {
-          if (ffprobe.length) {
-            return cb(null, ffprobe);
-          }
-
-          utils.which("ffprobe", function (err, ffprobe) {
-            cb(err, ffprobe);
-          });
+        (ffprobe: string, cb: (err: Error | null, p: string) => void) => {
+          if (ffprobe.length) return cb(null, ffprobe);
+          utils.which("ffprobe", (err, result) => cb(null, result || ""));
         },
-
-        // Search in the same directory as ffmpeg
-        function (ffprobe: string, cb: (err: Error | null, path: string) => void) {
-          if (ffprobe.length) {
-            return cb(null, ffprobe);
-          }
-
-          self._getFfmpegPath(function (err: Error | null, ffmpeg: string) {
-            if (err) {
-              cb(err, "");
-            } else if (ffmpeg.length) {
-              var name = utils.isWindows ? "ffprobe.exe" : "ffprobe";
-              var ffprobe = path.join(path.dirname(ffmpeg), name);
-              fs.access(ffprobe, fs.constants.F_OK, function (err) {
-                cb(null, !err ? ffprobe : "");
-              });
-            } else {
-              cb(null, "");
-            }
+        (ffprobe: string, cb: (err: Error | null, p: string) => void) => {
+          if (ffprobe.length) return cb(null, ffprobe);
+          this._getFfmpegPath((err, ffmpeg) => {
+            if (err || !ffmpeg) return cb(null, "");
+            const name = utils.isWindows ? "ffprobe.exe" : "ffprobe";
+            const ffprobePathFound = path.join(path.dirname(ffmpeg), name);
+            fs.access(ffprobePathFound, fs.constants.F_OK, (errAccess) => {
+              cb(null, !errAccess ? ffprobePathFound : "");
+            });
           });
         },
       ],
-      function (err: Error | null, ffprobe: string) {
-        if (err) {
-          callback(err);
-        } else {
-          callback(null, (cache.ffprobePath = ffprobe || ""));
-        }
+      (err, result) => {
+        if (err) return callback(err);
+        if (result) cache.ffprobePath = result;
+        callback(null, result);
       }
     );
   };
 
   /**
    * Check for flvtool2/flvmeta availability
-   *
-   * If the FLVTOOL2_PATH or FLVMETA_PATH environment variable are set, try to use them.
-   * If both are either unset or incorrect, try to find flvtool2 or flvmeta in the PATH instead.
-   *
-   * @method FfmpegCommand#_getFlvtoolPath
-   * @param {Function} callback callback with signature (err, path)
-   * @private
    */
   proto._getFlvtoolPath = function (callback: (err: Error | null, path?: string) => void) {
-    if ("flvtoolPath" in cache) {
-      return callback(null, cache.flvtoolPath);
-    }
+    if ("flvtoolPath" in cache) return callback(null, cache.flvtoolPath as string);
 
     async.waterfall(
       [
-        // Try FLVMETA_PATH
-        function (cb: (err: Error | null, path: string) => void) {
+        (cb: (err: Error | null, p: string) => void) => {
           if (process.env.FLVMETA_PATH) {
-            fs.access(process.env.FLVMETA_PATH, fs.constants.F_OK, function (err) {
-              cb(null, !err ? process.env.FLVMETA_PATH! : "");
-            });
-          } else {
-            cb(null, "");
-          }
+            fs.access(process.env.FLVMETA_PATH, fs.constants.F_OK, (err) =>
+              cb(null, !err ? process.env.FLVMETA_PATH! : "")
+            );
+          } else cb(null, "");
         },
-
-        // Try FLVTOOL2_PATH
-        function (flvtool: string, cb: (err: Error | null, path: string) => void) {
-          if (flvtool.length) {
-            return cb(null, flvtool);
-          }
-
+        (p: string, cb: (err: Error | null, p: string) => void) => {
+          if (p.length) return cb(null, p);
           if (process.env.FLVTOOL2_PATH) {
-            fs.access(process.env.FLVTOOL2_PATH, fs.constants.F_OK, function (err) {
-              cb(null, !err ? process.env.FLVTOOL2_PATH! : "");
-            });
-          } else {
-            cb(null, "");
-          }
+            fs.access(process.env.FLVTOOL2_PATH, fs.constants.F_OK, (err) =>
+              cb(null, !err ? process.env.FLVTOOL2_PATH! : "")
+            );
+          } else cb(null, "");
         },
-
-        // Search for flvmeta in the PATH
-        function (flvtool: string, cb: (err: Error | null, path: string) => void) {
-          if (flvtool.length) {
-            return cb(null, flvtool);
-          }
-
-          utils.which("flvmeta", function (err, flvmeta) {
-            cb(err, flvmeta!);
-          });
+        (p: string, cb: (err: Error | null, p: string) => void) => {
+          if (p.length) return cb(null, p);
+          utils.which("flvmeta", (err, result) => cb(null, result || ""));
         },
-
-        // Search for flvtool2 in the PATH
-        function (flvtool: string, cb: (err: Error | null, path: string) => void) {
-          if (flvtool.length) {
-            return cb(null, flvtool);
-          }
-
-          utils.which("flvtool2", function (err, flvtool2) {
-            cb(err, flvtool2!);
-          });
+        (p: string, cb: (err: Error | null, p: string) => void) => {
+          if (p.length) return cb(null, p);
+          utils.which("flvtool2", (err, result) => cb(null, result || ""));
         },
       ],
-      function (err: Error | null, flvtool: string) {
-        if (err) {
-          callback(err);
-        } else {
-          callback(null, (cache.flvtoolPath = flvtool || ""));
-        }
+      (err, result) => {
+        if (err) return callback(err);
+        if (result) cache.flvtoolPath = result;
+        callback(null, result);
       }
     );
   };
 
   /**
-   * A callback passed to {@link FfmpegCommand#availableFilters}.
-   *
-   * @callback FfmpegCommand~filterCallback
-   * @param {Error|null} err error object or null if no error happened
-   * @param {Object} filters filter object with filter names as keys and the following
-   *   properties for each filter:
-   * @param {String} filters.description filter description
-   * @param {String} filters.input input type, one of 'audio', 'video' and 'none'
-   * @param {Boolean} filters.multipleInputs whether the filter supports multiple inputs
-   * @param {String} filters.output output type, one of 'audio', 'video' and 'none'
-   * @param {Boolean} filters.multipleOutputs whether the filter supports multiple outputs
-   */
-
-  /**
    * Query ffmpeg for available filters
-   *
-   * @method FfmpegCommand#availableFilters
-   * @category Capabilities
-   * @aliases getAvailableFilters
-   *
-   * @param {FfmpegCommand~filterCallback} callback callback function
    */
   proto.availableFilters = proto.getAvailableFilters = function (
-    callback: (err: Error | null, filters?: any) => void
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, filters?: unknown) => void
   ) {
-    if ("filters" in cache) {
-      return callback(null, cache.filters);
-    }
+    if ("filters" in cache) return callback(null, cache.filters);
 
     this._spawnFfmpeg(
       ["-filters"],
       { captureStdout: true, stdoutLines: 0 },
-      function (err: Error | null, stdoutRing: any) {
-        if (err) {
-          return callback(err);
-        }
+      (err, _fp, stdoutRing) => {
+        if (err || !stdoutRing) return callback(err);
+        const stdout = stdoutRing.get();
+        const lines = stdout.split("\n");
+        const data: Record<string, unknown> = {};
+        const types: Record<string, string> = { A: "audio", V: "video", "|": "none" };
 
-        var stdout = stdoutRing.get();
-        var lines = stdout.split("\n");
-        var data: any = {};
-        var types: any = { A: "audio", V: "video", "|": "none" };
-
-        lines.forEach(function (line: string) {
-          var match = line.match(filterRegexp);
+        lines.forEach((line) => {
+          const match = line.match(filterRegexp);
           if (match) {
             data[match[1]] = {
               description: match[4],
@@ -375,55 +246,32 @@ export default function (proto: any) {
             };
           }
         });
-
         callback(null, (cache.filters = data));
       }
     );
   };
 
   /**
-   * A callback passed to {@link FfmpegCommand#availableCodecs}.
-   *
-   * @callback FfmpegCommand~codecCallback
-   * @param {Error|null} err error object or null if no error happened
-   * @param {Object} codecs codec object with codec names as keys and the following
-   *   properties for each codec (more properties may be available depending on the
-   *   ffmpeg version used):
-   * @param {String} codecs.description codec description
-   * @param {Boolean} codecs.canDecode whether the codec is able to decode streams
-   * @param {Boolean} codecs.canEncode whether the codec is able to encode streams
-   */
-
-  /**
    * Query ffmpeg for available codecs
-   *
-   * @method FfmpegCommand#availableCodecs
-   * @category Capabilities
-   * @aliases getAvailableCodecs
-   *
-   * @param {FfmpegCommand~codecCallback} callback callback function
    */
   proto.availableCodecs = proto.getAvailableCodecs = function (
-    callback: (err: Error | null, codecs?: any) => void
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, codecs?: unknown) => void
   ) {
-    if ("codecs" in cache) {
-      return callback(null, cache.codecs);
-    }
+    if ("codecs" in cache) return callback(null, cache.codecs);
 
     this._spawnFfmpeg(
       ["-codecs"],
       { captureStdout: true, stdoutLines: 0 },
-      function (err: Error | null, stdoutRing: any) {
-        if (err) {
-          return callback(err);
-        }
+      (err, _fp, stdoutRing) => {
+        if (err || !stdoutRing) return callback(err);
+        const stdout = stdoutRing.get();
+        const lines = stdout.split(lineBreakRegexp);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: Record<string, any> = {};
 
-        var stdout = stdoutRing.get();
-        var lines = stdout.split(lineBreakRegexp);
-        var data: any = {};
-
-        lines.forEach(function (line: string) {
-          var match = line.match(avCodecRegexp);
+        lines.forEach((line) => {
+          let match = line.match(avCodecRegexp);
           if (match && match[7] !== "=") {
             data[match[7]] = {
               type: { V: "video", A: "audio", S: "subtitle" }[match[3] as "V" | "A" | "S"],
@@ -438,7 +286,8 @@ export default function (proto: any) {
 
           match = line.match(ffCodecRegexp);
           if (match && match[7] !== "=") {
-            var codecData = (data[match[7]] = {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const codecData: Record<string, any> = (data[match[7]] = {
               type: { V: "video", A: "audio", S: "subtitle" }[match[3] as "V" | "A" | "S"],
               description: match[8],
               canDecode: match[1] === "D",
@@ -448,25 +297,26 @@ export default function (proto: any) {
               isLossless: match[6] === "S",
             });
 
-            var encoders = codecData.description.match(ffEncodersRegexp);
-            var encoderParts = encoders ? encoders[1].trim().split(" ") : [];
+            const encoders = (codecData.description as string).match(ffEncodersRegexp);
+            const encoderParts = encoders ? encoders[1].trim().split(" ") : [];
 
-            var decoders = codecData.description.match(ffDecodersRegexp);
-            var decoderParts = decoders ? decoders[1].trim().split(" ") : [];
+            const decoders = (codecData.description as string).match(ffDecodersRegexp);
+            const decoderParts = decoders ? decoders[1].trim().split(" ") : [];
 
             if (encoderParts.length || decoderParts.length) {
-              var coderData: any = {};
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const coderData: Record<string, any> = {};
               utils.copy(codecData, coderData);
               delete coderData.canEncode;
               delete coderData.canDecode;
 
-              encoderParts.forEach(function (name: string) {
+              encoderParts.forEach((name) => {
                 data[name] = {};
                 utils.copy(coderData, data[name]);
                 data[name].canEncode = true;
               });
 
-              decoderParts.forEach(function (name: string) {
+              decoderParts.forEach((name) => {
                 if (name in data) {
                   data[name].canDecode = true;
                 } else {
@@ -478,58 +328,31 @@ export default function (proto: any) {
             }
           }
         });
-
         callback(null, (cache.codecs = data));
       }
     );
   };
 
   /**
-   * A callback passed to {@link FfmpegCommand#availableEncoders}.
-   *
-   * @callback FfmpegCommand~encodersCallback
-   * @param {Error|null} err error object or null if no error happened
-   * @param {Object} encoders encoders object with encoder names as keys and the following
-   *   properties for each encoder:
-   * @param {String} encoders.description codec description
-   * @param {Boolean} encoders.type "audio", "video" or "subtitle"
-   * @param {Boolean} encoders.frameMT whether the encoder is able to do frame-level multithreading
-   * @param {Boolean} encoders.sliceMT whether the encoder is able to do slice-level multithreading
-   * @param {Boolean} encoders.experimental whether the encoder is experimental
-   * @param {Boolean} encoders.drawHorizBand whether the encoder supports draw_horiz_band
-   * @param {Boolean} encoders.directRendering whether the encoder supports direct encoding method 1
-   */
-
-  /**
    * Query ffmpeg for available encoders
-   *
-   * @method FfmpegCommand#availableEncoders
-   * @category Capabilities
-   * @aliases getAvailableEncoders
-   *
-   * @param {FfmpegCommand~encodersCallback} callback callback function
    */
   proto.availableEncoders = proto.getAvailableEncoders = function (
-    callback: (err: Error | null, encoders?: any) => void
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, encoders?: unknown) => void
   ) {
-    if ("encoders" in cache) {
-      return callback(null, cache.encoders);
-    }
+    if ("encoders" in cache) return callback(null, cache.encoders);
 
     this._spawnFfmpeg(
       ["-encoders"],
       { captureStdout: true, stdoutLines: 0 },
-      function (err: Error | null, stdoutRing: any) {
-        if (err) {
-          return callback(err);
-        }
+      (err, _fp, stdoutRing) => {
+        if (err || !stdoutRing) return callback(err);
+        const stdout = stdoutRing.get();
+        const lines = stdout.split(lineBreakRegexp);
+        const data: Record<string, unknown> = {};
 
-        var stdout = stdoutRing.get();
-        var lines = stdout.split(lineBreakRegexp);
-        var data: any = {};
-
-        lines.forEach(function (line: string) {
-          var match = line.match(encodersRegexp);
+        lines.forEach((line) => {
+          const match = line.match(encodersRegexp);
           if (match && match[7] !== "=") {
             data[match[7]] = {
               type: { V: "video", A: "audio", S: "subtitle" }[match[1] as "V" | "A" | "S"],
@@ -542,76 +365,46 @@ export default function (proto: any) {
             };
           }
         });
-
         callback(null, (cache.encoders = data));
       }
     );
   };
 
   /**
-   * A callback passed to {@link FfmpegCommand#availableFormats}.
-   *
-   * @callback FfmpegCommand~formatCallback
-   * @param {Error|null} err error object or null if no error happened
-   * @param {Object} formats format object with format names as keys and the following
-   *   properties for each format:
-   * @param {String} formats.description format description
-   * @param {Boolean} formats.canDemux whether the format is able to demux streams from an input file
-   * @param {Boolean} formats.canMux whether the format is able to mux streams into an output file
-   */
-
-  /**
    * Query ffmpeg for available formats
-   *
-   * @method FfmpegCommand#availableFormats
-   * @category Capabilities
-   * @aliases getAvailableFormats
-   *
-   * @param {FfmpegCommand~formatCallback} callback callback function
    */
   proto.availableFormats = proto.getAvailableFormats = function (
-    callback: (err: Error | null, formats?: any) => void
+    this: FfmpegCommandInterface,
+    callback: (err: Error | null, formats?: unknown) => void
   ) {
-    if ("formats" in cache) {
-      return callback(null, cache.formats);
-    }
+    if ("formats" in cache) return callback(null, cache.formats);
 
-    // Run ffmpeg -formats
     this._spawnFfmpeg(
       ["-formats"],
       { captureStdout: true, stdoutLines: 0 },
-      function (err: Error | null, stdoutRing: any) {
-        if (err) {
-          return callback(err);
-        }
+      (err, _fp, stdoutRing) => {
+        if (err || !stdoutRing) return callback(err);
+        const stdout = stdoutRing.get();
+        const lines = stdout.split(lineBreakRegexp);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: Record<string, any> = {};
 
-        // Parse output
-        var stdout = stdoutRing.get();
-        var lines = stdout.split(lineBreakRegexp);
-        var data: any = {};
-
-        lines.forEach(function (line: string) {
-          var match = line.match(formatRegexp);
+        lines.forEach((line) => {
+          const match = line.match(formatRegexp);
           if (match) {
-            match[3].split(",").forEach(function (format: string) {
-              if (!(format in data)) {
-                data[format] = {
+            match[3].split(",").forEach((formatFound) => {
+              if (!(formatFound in data)) {
+                data[formatFound] = {
                   description: match[4],
                   canDemux: false,
                   canMux: false,
                 };
               }
-
-              if (match[1] === "D") {
-                data[format].canDemux = true;
-              }
-              if (match[2] === "E") {
-                data[format].canMux = true;
-              }
+              if (match[1] === "D") data[formatFound].canDemux = true;
+              if (match[2] === "E") data[formatFound].canMux = true;
             });
           }
         });
-
         callback(null, (cache.formats = data));
       }
     );
@@ -619,111 +412,86 @@ export default function (proto: any) {
 
   /**
    * Check capabilities before executing a command
-   *
-   * Checks whether all used codecs and formats are indeed available
-   *
-   * @method FfmpegCommand#_checkCapabilities
-   * @param {Function} callback callback with signature (err)
-   * @private
    */
-  proto._checkCapabilities = function (callback: (err?: Error | null) => void) {
-    var self = this;
+  proto._checkCapabilities = function (
+    this: FfmpegCommandInterface,
+    callback: (err?: Error | null) => void
+  ) {
     async.waterfall(
       [
-        // Get available formats
-        function (cb: (err: Error | null, formats?: any) => void) {
-          self.availableFormats(cb);
-        },
+        (cb: (err: Error | null, f?: unknown) => void) => this.availableFormats(cb),
+        (formats: unknown, cb: (err?: Error | null) => void) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const fmts = formats as Record<string, any>;
+          let unavailable: string[];
 
-        // Check whether specified formats are available
-        function (formats: any, cb: (err?: Error, result?: any) => void) {
-          var unavailable: string[];
-
-          // Output format(s)
-          unavailable = self._outputs.reduce(function (fmts: string[], output: any) {
-            var format = output.options.find("-f", 1);
-            if (format) {
-              if (!(format[0] in formats) || !formats[format[0]].canMux) {
-                fmts.push(format);
-              }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          unavailable = this._outputs.reduce((acc: string[], output: any) => {
+            const formatFound = output.options.find("-f", 1);
+            if (formatFound) {
+              if (!(formatFound[0] in fmts) || !fmts[formatFound[0]].canMux)
+                acc.push(formatFound[0]);
             }
-
-            return fmts;
+            return acc;
           }, []);
 
-          if (unavailable.length === 1) {
-            return cb(new Error("Output format " + unavailable[0] + " is not available"));
-          } else if (unavailable.length > 1) {
-            return cb(new Error("Output formats " + unavailable.join(", ") + " are not available"));
-          }
+          if (unavailable.length === 1)
+            return cb(new Error(`Output format ${unavailable[0]} is not available`));
+          if (unavailable.length > 1)
+            return cb(new Error(`Output formats ${unavailable.join(", ")} are not available`));
 
-          // Input format(s)
-          unavailable = self._inputs.reduce(function (fmts: string[], input: any) {
-            var format = input.options.find("-f", 1);
-            if (format) {
-              if (!(format[0] in formats) || !formats[format[0]].canDemux) {
-                fmts.push(format[0]);
-              }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          unavailable = this._inputs.reduce((acc: string[], input: any) => {
+            const formatFound = input.options.find("-f", 1);
+            if (formatFound) {
+              if (!(formatFound[0] in fmts) || !fmts[formatFound[0]].canDemux)
+                acc.push(formatFound[0]);
             }
-
-            return fmts;
+            return acc;
           }, []);
 
-          if (unavailable.length === 1) {
-            return cb(new Error("Input format " + unavailable[0] + " is not available"));
-          } else if (unavailable.length > 1) {
-            return cb(new Error("Input formats " + unavailable.join(", ") + " are not available"));
-          }
+          if (unavailable.length === 1)
+            return cb(new Error(`Input format ${unavailable[0]} is not available`));
+          if (unavailable.length > 1)
+            return cb(new Error(`Input formats ${unavailable.join(", ")} are not available`));
 
-          cb();
+          cb(null);
         },
+        (cb: (err: Error | null, e?: unknown) => void) => this.availableEncoders(cb),
+        (encoders: unknown, cb: (err?: Error | null) => void) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const encs = encoders as Record<string, any>;
+          let unavailable: string[];
 
-        // Get available codecs
-        function (cb: (err: Error | null, encoders?: any) => void) {
-          self.availableEncoders(cb);
-        },
-
-        // Check whether specified codecs are available and add strict experimental options if needed
-        function (encoders: any, cb: (err?: Error) => void) {
-          var unavailable: string[];
-
-          // Audio codec(s)
-          unavailable = self._outputs.reduce(function (cdcs: string[], output: any) {
-            var acodec = output.audio.find("-acodec", 1);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          unavailable = this._outputs.reduce((acc: string[], output: any) => {
+            const acodec = output.audio.find("-acodec", 1);
             if (acodec && acodec[0] !== "copy") {
-              if (!(acodec[0] in encoders) || encoders[acodec[0]].type !== "audio") {
-                cdcs.push(acodec[0]);
-              }
+              if (!(acodec[0] in encs) || encs[acodec[0]].type !== "audio") acc.push(acodec[0]);
             }
-
-            return cdcs;
+            return acc;
           }, []);
 
-          if (unavailable.length === 1) {
-            return cb(new Error("Audio codec " + unavailable[0] + " is not available"));
-          } else if (unavailable.length > 1) {
-            return cb(new Error("Audio codecs " + unavailable.join(", ") + " are not available"));
-          }
+          if (unavailable.length === 1)
+            return cb(new Error(`Audio codec ${unavailable[0]} is not available`));
+          if (unavailable.length > 1)
+            return cb(new Error(`Audio codecs ${unavailable.join(", ")} are not available`));
 
-          // Video codec(s)
-          unavailable = self._outputs.reduce(function (cdcs: string[], output: any) {
-            var vcodec = output.video.find("-vcodec", 1);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          unavailable = this._outputs.reduce((acc: string[], output: any) => {
+            const vcodec = output.video.find("-vcodec", 1);
             if (vcodec && vcodec[0] !== "copy") {
-              if (!(vcodec[0] in encoders) || encoders[vcodec[0]].type !== "video") {
-                cdcs.push(vcodec[0]);
-              }
+              if (!(vcodec[0] in encs) || encs[vcodec[0]].type !== "video") acc.push(vcodec[0]);
             }
-
-            return cdcs;
+            return acc;
           }, []);
 
-          if (unavailable.length === 1) {
-            return cb(new Error("Video codec " + unavailable[0] + " is not available"));
-          } else if (unavailable.length > 1) {
-            return cb(new Error("Video codecs " + unavailable.join(", ") + " are not available"));
-          }
+          if (unavailable.length === 1)
+            return cb(new Error(`Video codec ${unavailable[0]} is not available`));
+          if (unavailable.length > 1)
+            return cb(new Error(`Video codecs ${unavailable.join(", ")} are not available`));
 
-          cb();
+          cb(null);
         },
       ],
       callback

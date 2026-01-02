@@ -74,15 +74,15 @@ export function getShellConfigPath(shell: ShellType): string | null {
             return join(home, ".zshrc");
 
         case "fish":
-            const fishConfigDir = join(home, ".config", "fish");
+            { const fishConfigDir = join(home, ".config", "fish");
             if (!existsSync(fishConfigDir)) {
                 mkdirSync(fishConfigDir, { recursive: true });
             }
-            return join(fishConfigDir, "config.fish");
+            return join(fishConfigDir, "config.fish"); }
 
         case "powershell":
             // Try PowerShell Core profile first
-            const pwshProfile = join(home, ".config", "powershell", "profile.ps1");
+            { const pwshProfile = join(home, ".config", "powershell", "profile.ps1");
             if (existsSync(join(home, ".config", "powershell"))) {
                 return pwshProfile;
             }
@@ -98,7 +98,7 @@ export function getShellConfigPath(shell: ShellType): string | null {
             } catch {
                 // Fallback
             }
-            return pwshProfile;
+            return pwshProfile; }
 
         case "cmd":
             // Windows CMD doesn't use a config file, use registry

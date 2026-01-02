@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from "vitest";
 import { detectMediaType, getBackend } from "../src/router";
-import { fluentFfmpegBackend } from "../src/backends/fluent-ffmpeg";
+import { fluentFfmpegBackend } from "../src/backends/ffmpeg";
 import { sharpBackend } from "../src/backends/sharp";
 
 describe("Router", () => {

@@ -1,681 +1,301 @@
 /*jshint node:true*/
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, SpawnOptionsWithoutStdio } from "child_process";
 import path from "path";
 import fs from "fs";
-import async from "async";
-import utils from "./utils";
-import type { FfmpegCommand } from "./utils";
+import { PassThrough } from "stream";
+import utils, { FfmpegCommand as FfmpegCommandInterface, Ring } from "./utils";
 
 /*
  *! Processor methods
  */
 
-/**
- * Run ffprobe asynchronously and store data in command
- *
- * @param {FfmpegCommand} command
- * @private
- */
-function runFfprobe(command: any) {
-  const inputProbeIndex = 0;
-  if (command._inputs[inputProbeIndex].isStream) {
-    // Don't probe input streams as this will consume them
-    return;
-  }
-  command.ffprobe(inputProbeIndex, function (err: any, data: any) {
-    command._ffprobeData = data;
-  });
-}
-
-export default function (proto: any) {
+export default function (proto: FfmpegCommandInterface & Record<string, any>) {
   /**
-   * Emitted just after ffmpeg has been spawned.
-   *
-   * @event FfmpegCommand#start
-   * @param {String} command ffmpeg command line
+   * Get ffmpeg arguments
    */
+  proto._getArguments = function (this: FfmpegCommandInterface) {
+    let args: string[] = [];
+
+    // Add inputs
+    this._inputs.forEach((input) => {
+      const inputArgs = input.options.get();
+      args = args.concat(inputArgs);
+      args.push("-i", input.source as string);
+    });
+
+    // Add complex filters
+    args.push(...((this as any)._complexFilters.get() as string[]));
+
+    // Add global options
+    args.push(...((this as any)._global.get() as string[]));
+
+    // Add outputs
+    this._outputs.forEach((output) => {
+      const oArgs = output.options.get();
+      const aArgs = output.audio.get();
+      const vArgs = output.video.get();
+      const aFilters = output.audioFilters.get();
+      const vFilters = output.videoFilters.get();
+
+      const hasContent =
+        oArgs.length > 0 ||
+        aArgs.length > 0 ||
+        vArgs.length > 0 ||
+        aFilters.length > 0 ||
+        vFilters.length > 0;
+
+      // Add options, audio, video
+      args.push(...oArgs);
+      args.push(...aArgs);
+      args.push(...vArgs);
+
+      if (aFilters.length > 0) {
+        args.push("-filter:a", aFilters.join(","));
+      }
+
+      if (vFilters.length > 0) {
+        args.push("-filter:v", vFilters.join(","));
+      }
+
+      // Rule: add target if exists, OR if it has content, OR if it's the lone default (no complex filters)
+      if (
+        output.target ||
+        hasContent ||
+        (this._outputs.length === 1 && !this._complexFilters.get().length)
+      ) {
+        args.push((output.target as string) || "-");
+      }
+    });
+
+    return args;
+  };
 
   /**
-   * Emitted when ffmpeg reports progress information
-   *
-   * @event FfmpegCommand#progress
-   * @param {Object} progress progress object
-   * @param {Number} progress.frames number of frames transcoded
-   * @param {Number} progress.currentFps current processing speed in frames per second
-   * @param {Number} progress.currentKbps current output generation speed in kilobytes per second
-   * @param {Number} progress.targetSize current output file size
-   * @param {String} progress.timemark current video timemark
-   * @param {Number} [progress.percent] processing progress (may not be available depending on input)
+   * Run ffmpeg command
    */
+  proto.run = function (this: FfmpegCommandInterface) {
+    this._checkCapabilities((err) => {
+      if (err) {
+        return this.emit("error", err);
+      }
+
+      this._spawnFfmpeg(this._getArguments(), {
+        niceness: this.options.niceness,
+        cwd: this.options.cwd,
+        timeout: this.options.timeout,
+      });
+    });
+
+    return this;
+  };
 
   /**
-   * Emitted when ffmpeg outputs to stderr
-   *
-   * @event FfmpegCommand#stderr
-   * @param {String} line stderr output line
-   */
-
-  /**
-   * Emitted when ffmpeg reports input codec data
-   *
-   * @event FfmpegCommand#codecData
-   * @param {Object} codecData codec data object
-   * @param {String} codecData.format input format name
-   * @param {String} codecData.audio input audio codec name
-   * @param {String} codecData.audio_details input audio codec parameters
-   * @param {String} codecData.video input video codec name
-   * @param {String} codecData.video_details input video codec parameters
-   */
-
-  /**
-   * Emitted when an error happens when preparing or running a command
-   *
-   * @event FfmpegCommand#error
-   * @param {Error} error error object, with optional properties 'inputStreamError' / 'outputStreamError' for errors on their respective streams
-   * @param {String|null} stdout ffmpeg stdout, unless outputting to a stream
-   * @param {String|null} stderr ffmpeg stderr
-   */
-
-  /**
-   * Emitted when a command finishes processing
-   *
-   * @event FfmpegCommand#end
-   * @param {Array|String|null} [filenames|stdout] generated filenames when taking screenshots, ffmpeg stdout when not outputting to a stream, null otherwise
-   * @param {String|null} stderr ffmpeg stderr
-   */
-
-  /**
-   * Spawn an ffmpeg process
-   *
-   * The 'options' argument may contain the following keys:
-   * - 'niceness': specify process niceness, ignored on Windows (default: 0)
-   * - `cwd`: change working directory
-   * - 'captureStdout': capture stdout and pass it to 'endCB' as its 2nd argument (default: false)
-   * - 'stdoutLines': override command limit (default: use command limit)
-   *
-   * The 'processCB' callback, if present, is called as soon as the process is created and
-   * receives a nodejs ChildProcess object.  It may not be called at all if an error happens
-   * before spawning the process.
-   *
-   * The 'endCB' callback is called either when an error occurs or when the ffmpeg process finishes.
-   *
-   * @method FfmpegCommand#_spawnFfmpeg
-   * @param {Array} args ffmpeg command line argument list
-   * @param {Object} [options] spawn options (see above)
-   * @param {Function} [processCB] callback called with process object and stdout/stderr ring buffers when process has been created
-   * @param {Function} endCB callback called with error (if applicable) and stdout/stderr ring buffers when process finished
-   * @private
+   * Spawn ffmpeg process
    */
   proto._spawnFfmpeg = function (
-    this: any,
+    this: FfmpegCommandInterface,
     args: string[],
-    options: any,
-    processCB?: Function,
-    endCB?: Function
+    options: { niceness?: number; cwd?: string; timeout?: number },
+    processCB?: (ffmpegProc: ChildProcess, stdoutRing: Ring, stderrRing: Ring) => void,
+    endCB?: (err: Error | null, stdoutRing?: Ring, stderrRing?: Ring) => void
   ) {
-    // Enable omitting options
-    if (typeof options === "function") {
-      endCB = processCB;
-      processCB = options;
-      options = {};
-    }
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    let processExited = false;
+    let stdoutRing: Ring;
+    let stderrRing: Ring;
 
-    // Enable omitting processCB
-    if (typeof endCB === "undefined") {
-      endCB = processCB;
-      processCB = function () {};
-    }
-
-    // Handle case where both were undefined (e.g. called with only args and options)
-    if (typeof endCB === "undefined") {
-      endCB = function () {};
-    }
-
-    var maxLines = "stdoutLines" in options ? options.stdoutLines : this.options.stdoutLines;
-
-    // Find ffmpeg
-    this._getFfmpegPath(function (err: Error, command: string) {
+    this._getFfmpegPath((err, ffmpegPath) => {
       if (err) {
-        return endCB(err);
-      } else if (!command || command.length === 0) {
-        return endCB(new Error("Cannot find ffmpeg"));
+        if (processCB) {
+          stdoutRing = utils.linesRing(0);
+          stderrRing = utils.linesRing(0);
+          return endCB ? endCB(err, stdoutRing, stderrRing) : self.emit("error", err);
+        }
+        return self.emit("error", err);
       }
 
-      // Apply niceness
+      if (!ffmpegPath) {
+        const error = new Error("ffmpeg binary not found");
+        return endCB ? endCB(error) : self.emit("error", error);
+      }
+
+      let finalArgs = args;
       if (options.niceness && options.niceness !== 0 && !utils.isWindows) {
-        args.unshift("-n", options.niceness, command);
-        command = "nice";
+        finalArgs = ["-n", options.niceness.toString(), ffmpegPath].concat(args);
+        ffmpegPath = "nice";
       }
 
-      var stdoutRing = utils.linesRing(maxLines);
-      var stdoutClosed = false;
+      // 诊断日志
+      console.log("DEBUG: spawning ffmpeg:", ffmpegPath, finalArgs.join(" "));
 
-      var stderrRing = utils.linesRing(maxLines);
-      var stderrClosed = false;
+      const spawnOptions: SpawnOptionsWithoutStdio = {
+        cwd: options.cwd,
+      };
 
-      // Spawn process
-      var ffmpegProc = spawn(command, args, options);
+      const ffmpegProc = spawn(ffmpegPath, finalArgs, spawnOptions);
 
       if (ffmpegProc.stderr) {
         ffmpegProc.stderr.setEncoding("utf8");
       }
 
-      ffmpegProc.on("error", function (err: Error) {
-        endCB(err);
-      });
+      stdoutRing = utils.linesRing(self.options.stdoutLines || 100);
+      stderrRing = utils.linesRing(self.options.stdoutLines || 100);
 
-      // Ensure we wait for captured streams to end before calling endCB
-      var exitError: Error | null = null;
-      function handleExit(err?: Error) {
-        if (err) {
-          exitError = err;
-        }
-
-        if (processExited && (stdoutClosed || !options.captureStdout) && stderrClosed) {
-          endCB(exitError, stdoutRing, stderrRing);
-        }
+      if (ffmpegProc.stdout) {
+        ffmpegProc.stdout.on("data", (data) => stdoutRing.append(data));
       }
 
-      // Handle process exit
-      var processExited = false;
-      ffmpegProc.on("exit", function (code: number, signal: string) {
-        processExited = true;
+      let codecDataSent = false;
+      const codecData: any = {};
 
-        if (signal) {
-          handleExit(new Error("ffmpeg was killed with signal " + signal));
-        } else if (code) {
-          handleExit(new Error("ffmpeg exited with code " + code));
-        } else {
-          handleExit();
-        }
-      });
-
-      // Capture stdout if specified
-      if (options.captureStdout) {
-        ffmpegProc.stdout!.on("data", function (data: any) {
-          stdoutRing.append(data);
-        });
-
-        ffmpegProc.stdout!.on("close", function () {
-          stdoutRing.close();
-          stdoutClosed = true;
-          handleExit();
+      if (ffmpegProc.stderr) {
+        ffmpegProc.stderr.on("data", (data) => {
+          stderrRing.append(data);
+          const lines = data.toString().split(/\r\n|\r|\n/);
+          lines.forEach((line: string) => {
+            if (!codecDataSent) {
+              codecDataSent = utils.extractCodecData(self, line, codecData);
+            }
+            utils.extractProgress(self, line);
+          });
         });
       }
 
-      // Capture stderr if specified
-      ffmpegProc.stderr!.on("data", function (data: any) {
-        stderrRing.append(data);
-      });
-
-      ffmpegProc.stderr!.on("close", function () {
-        stderrRing.close();
-        stderrClosed = true;
-        handleExit();
-      });
-
-      // Call process callback
-      processCB(ffmpegProc, stdoutRing, stderrRing);
-    });
-  };
-
-  /**
-   * Build the argument list for an ffmpeg command
-   *
-   * @method FfmpegCommand#_getArguments
-   * @return argument list
-   * @private
-   */
-  proto._getArguments = function (this: any) {
-    var complexFilters = this._complexFilters.get();
-
-    var fileOutput = this._outputs.some(function (output: any) {
-      return output.isFile;
-    });
-
-    return ([] as any[]).concat(
-      // Inputs and input options
-      // @ts-ignore
-      this._inputs.reduce(function (args: any[], input: any) {
-        var source = typeof input.source === "string" ? input.source : "pipe:0";
-
-        // For each input, add input options, then '-i <source>'
-        return args.concat(input.options.get(), ["-i", source]);
-      }, []),
-
-      // Global options
-      this._global.get(),
-
-      // Overwrite if we have file outputs
-      fileOutput ? ["-y"] : [],
-
-      // Complex filters
-      complexFilters,
-
-      // Outputs, filters and output options
-      // @ts-ignore
-      this._outputs.reduce(function (args: any[], output: any) {
-        var sizeFilters = utils.makeFilterStrings(output.sizeFilters.get());
-        var audioFilters = output.audioFilters.get();
-        var videoFilters = output.videoFilters.get().concat(sizeFilters);
-        var outputArg: string[];
-
-        if (!output.target) {
-          outputArg = [];
-        } else if (typeof output.target === "string") {
-          outputArg = [output.target];
-        } else {
-          outputArg = ["pipe:1"];
+      // Handle input streams
+      let inputStreamsCount = 0;
+      self._inputs.forEach((input) => {
+        if (input.isStream && input.source && typeof (input.source as any).pipe === "function") {
+          inputStreamsCount++;
+          (input.source as any).on("error", (streamErr: Error) => {
+            const errWithMsg = new Error("Input stream error: " + streamErr.message);
+            if (!processExited) {
+              processExited = true;
+              ffmpegProc.kill("SIGKILL");
+              if (endCB) endCB(errWithMsg, stdoutRing, stderrRing);
+              else self.emit("error", errWithMsg);
+            }
+          });
+          (input.source as any).pipe(ffmpegProc.stdin);
         }
+      });
+      if (inputStreamsCount > 0) {
+        console.log("DEBUG: piped", inputStreamsCount, "input streams to stdin");
+      }
 
-        return args.concat(
-          output.audio.get(),
-          audioFilters.length ? ["-filter:a", audioFilters.join(",")] : [],
-          output.video.get(),
-          videoFilters.length ? ["-filter:v", videoFilters.join(",")] : [],
-          output.options.get(),
-          outputArg
-        );
-      }, [])
-    );
-  };
+      if (processCB) {
+        processCB(ffmpegProc, stdoutRing, stderrRing);
+      }
 
-  /**
-   * Prepare execution of an ffmpeg command
-   *
-   * Checks prerequisites for the execution of the command (codec/format availability, flvtool...),
-   * then builds the argument list for ffmpeg and pass them to 'callback'.
-   *
-   * @method FfmpegCommand#_prepare
-   * @param {Function} callback callback with signature (err, args)
-   * @param {Boolean} [readMetadata=false] read metadata before processing
-   * @private
-   */
-  proto._prepare = function (this: any, callback: Function, readMetadata: boolean) {
-    var self = this;
-
-    async.waterfall(
-      [
-        // Check codecs and formats
-        function (cb: Function) {
-          self._checkCapabilities(cb);
-        },
-
-        // Read metadata if required
-        function (cb: Function) {
-          if (!readMetadata) {
-            return cb();
+      if (options.timeout) {
+        self.processTimer = setTimeout(() => {
+          const timeoutErr = new Error("ffmpeg process timed out");
+          self.kill("SIGKILL");
+          if (!processExited) {
+            processExited = true;
+            if (endCB) endCB(timeoutErr, stdoutRing, stderrRing);
+            else self.emit("error", timeoutErr);
           }
+        }, options.timeout * 1000);
+      }
 
-          self.ffprobe(0, function (err: Error, data: any) {
-            if (!err) {
-              self._ffprobeData = data;
-            }
-
-            cb();
-          });
-        },
-
-        // Check for flvtool2/flvmeta if necessary
-        function (cb: Function) {
-          var flvmeta = self._outputs.some(function (output: any) {
-            // Remove flvmeta flag on non-file output
-            if (output.flags.flvmeta && !output.isFile) {
-              self.logger.warn("Updating flv metadata is only supported for files");
-              output.flags.flvmeta = false;
-            }
-
-            return output.flags.flvmeta;
-          });
-
-          if (flvmeta) {
-            self._getFlvtoolPath(function (err: Error) {
-              cb(err);
-            });
+      const handleEnd = (err: Error | null) => {
+        if (!processExited) {
+          processExited = true;
+          if (self.processTimer) clearTimeout(self.processTimer);
+          if (endCB) {
+            endCB(err, stdoutRing, stderrRing);
           } else {
-            cb();
+            if (err) self.emit("error", err);
+            else self.emit("end");
           }
-        },
+        }
+      };
 
-        // Build argument list
-        function (cb: Function) {
-          var args;
-          try {
-            args = self._getArguments();
-          } catch (e) {
-            return cb(e);
-          }
+      ffmpegProc.on("error", (err) => {
+        console.error("DEBUG: ffmpegProc error:", err);
+        handleEnd(err);
+      });
 
-          cb(null, args);
-        },
-
-        // Add "-strict experimental" option where needed
-        function (args: string[], cb: Function) {
-          self.availableEncoders(function (err: Error, encoders: any) {
-            for (var i = 0; i < args.length; i++) {
-              if (args[i] === "-acodec" || args[i] === "-vcodec") {
-                i++;
-
-                if (args[i] in encoders && encoders[args[i]].experimental) {
-                  args.splice(i + 1, 0, "-strict", "experimental");
-                  i += 2;
-                }
-              }
-            }
-
-            cb(null, args);
-          });
-        },
-      ],
-      callback as any
-    );
-
-    if (!readMetadata) {
-      // Read metadata as soon as 'progress' listeners are added
-
-      if (this.listeners("progress").length > 0) {
-        // Read metadata in parallel
-        runFfprobe(this);
-      } else {
-        // Read metadata as soon as the first 'progress' listener is added
-        this.once("newListener", (event: string) => {
-          if (event === "progress") {
-            runFfprobe(this as any);
-          }
-        });
-      }
-    }
+      ffmpegProc.on("exit", (code, signal) => {
+        console.log("DEBUG: ffmpegProc exit:", code, signal);
+        if (code !== 0 && code !== 255 && signal !== "SIGKILL") {
+          const stderr = stderrRing.get();
+          const err = new Error(
+            "ffmpeg exited with code " + code + ": " + utils.extractError(stderr)
+          );
+          handleEnd(err);
+        } else {
+          handleEnd(null);
+        }
+      });
+    });
   };
 
   /**
-   * Run ffmpeg command
-   *
-   * @method FfmpegCommand#run
-   * @category Processing
-   * @aliases exec,execute
+   * Save output to file
    */
-  proto.exec =
-    proto.execute =
-    proto.run =
-      function (this: any) {
-        var self = this;
+  proto.save = proto.saveToFile = function (this: FfmpegCommandInterface, outputPath: string) {
+    this._checkCapabilities((err) => {
+      if (err) return this.emit("error", err);
 
-        // Check if at least one output is present
-        var outputPresent = this._outputs.some(function (output: any) {
-          return "target" in output;
-        });
+      const outStream = fs.createWriteStream(outputPath);
+      outStream.on("error", (streamErr) => this.emit("error", streamErr));
 
-        if (!outputPresent) {
-          throw new Error("No output specified");
-        }
-
-        // Get output stream if any
-        var outputStream = this._outputs.filter(function (output: any) {
-          return typeof output.target !== "string";
-        })[0];
-
-        // Get input stream if any
-        var inputStream = this._inputs.filter(function (input: any) {
-          return typeof input.source !== "string";
-        })[0];
-
-        // Ensure we send 'end' or 'error' only once
-        var ended = false;
-        function emitEnd(err?: Error | null, stdout?: string, stderr?: string) {
-          if (!ended) {
-            ended = true;
-
-            if (err) {
-              self.emit("error", err, stdout, stderr);
-            } else {
-              self.emit("end", stdout, stderr);
-            }
+      this._spawnFfmpeg(
+        this._getArguments(),
+        {
+          niceness: this.options.niceness,
+          cwd: this.options.cwd,
+          timeout: this.options.timeout,
+        },
+        (ffmpegProc) => {
+          if (ffmpegProc.stdout) {
+            ffmpegProc.stdout.pipe(outStream);
           }
         }
+      );
+    });
 
-        self._prepare(function (err: Error, args: string[]) {
+    return this;
+  };
+
+  /**
+   * Pipe output to stream
+   */
+  proto.pipe =
+    proto.stream =
+    proto.writeToStream =
+      function (this: FfmpegCommandInterface, stream?: any, options?: { end?: boolean }) {
+        const hasStream = !!stream;
+        const outStream = hasStream ? stream : new PassThrough();
+
+        this._checkCapabilities((err) => {
           if (err) {
-            return emitEnd(err);
+            if (hasStream) this.emit("error", err);
+            else outStream.emit("error", err);
+            return;
           }
 
-          // Run ffmpeg
-          self._spawnFfmpeg(
-            args,
+          this._spawnFfmpeg(
+            this._getArguments(),
             {
-              captureStdout: !outputStream,
-              niceness: self.options.niceness,
-              cwd: self.options.cwd,
-              windowsHide: true,
+              niceness: this.options.niceness,
+              cwd: this.options.cwd,
+              timeout: this.options.timeout,
             },
-
-            function processCB(ffmpegProc: ChildProcess, stdoutRing: any, stderrRing: any) {
-              self.ffmpegProc = ffmpegProc;
-              self.emit("start", "ffmpeg " + args.join(" "));
-
-              // Pipe input stream if any
-              if (inputStream) {
-                inputStream.source.on("error", function (err: Error) {
-                  var reportingErr: any = new Error("Input stream error: " + err.message);
-                  reportingErr.inputStreamError = err;
-                  emitEnd(reportingErr);
-                  ffmpegProc.kill();
-                });
-
-                inputStream.source.resume();
-                inputStream.source.pipe(ffmpegProc.stdin);
-
-                // Set stdin error handler on ffmpeg (prevents nodejs catching the error, but
-                // ffmpeg will fail anyway, so no need to actually handle anything)
-                ffmpegProc.stdin!.on("error", function () {});
+            (ffmpegProc) => {
+              if (ffmpegProc.stdout) {
+                ffmpegProc.stdout.pipe(outStream, options);
               }
-
-              // Setup timeout if requested
-              if (self.options.timeout) {
-                self.processTimer = setTimeout(function () {
-                  var msg = "process ran into a timeout (" + self.options.timeout + "s)";
-
-                  emitEnd(new Error(msg), stdoutRing.get(), stderrRing.get());
-                  ffmpegProc.kill();
-                }, self.options.timeout * 1000);
-              }
-
-              if (outputStream) {
-                // Pipe ffmpeg stdout to output stream
-                ffmpegProc.stdout!.pipe(outputStream.target, outputStream.pipeopts);
-
-                // Handle output stream events
-                outputStream.target.on("close", function () {
-                  self.logger.debug("Output stream closed, scheduling kill for ffmpeg process");
-
-                  // Don't kill process yet, to give a chance to ffmpeg to
-                  // terminate successfully first  This is necessary because
-                  // under load, the process 'exit' event sometimes happens
-                  // after the output stream 'close' event.
-                  setTimeout(function () {
-                    emitEnd(new Error("Output stream closed"));
-                    ffmpegProc.kill();
-                  }, 20);
-                });
-
-                outputStream.target.on("error", function (err: Error) {
-                  self.logger.debug("Output stream error, killing ffmpeg process");
-                  var reportingErr: any = new Error("Output stream error: " + err.message);
-                  reportingErr.outputStreamError = err;
-                  emitEnd(reportingErr, stdoutRing.get(), stderrRing.get());
-                  ffmpegProc.kill("SIGKILL");
-                });
-              }
-
-              // Setup stderr handling
-              if (stderrRing) {
-                // 'stderr' event
-                if (self.listeners("stderr").length) {
-                  stderrRing.callback(function (line: string) {
-                    self.emit("stderr", line);
-                  });
-                }
-
-                // 'codecData' event
-                if (self.listeners("codecData").length) {
-                  var codecDataSent = false;
-                  var codecObject = {};
-
-                  stderrRing.callback(function (line: string) {
-                    if (!codecDataSent)
-                      codecDataSent = utils.extractCodecData(self, line, codecObject);
-                  });
-                }
-
-                // 'progress' event
-                if (self.listeners("progress").length) {
-                  stderrRing.callback(function (line: string) {
-                    utils.extractProgress(self, line);
-                  });
-                }
-              }
-            },
-
-            function endCB(err: any, stdoutRing: any, stderrRing: any) {
-              clearTimeout(self.processTimer);
-              delete self.ffmpegProc;
-
-              if (err) {
-                if (err.message.match(/ffmpeg exited with code/)) {
-                  // Add ffmpeg error message
-                  err.message += ": " + utils.extractError(stderrRing.get());
-                }
-
-                emitEnd(err, stdoutRing.get(), stderrRing.get());
-              } else {
-                // Find out which outputs need flv metadata
-                var flvmeta = self._outputs.filter(function (output: any) {
-                  return output.flags.flvmeta;
-                });
-
-                if (flvmeta.length) {
-                  self._getFlvtoolPath(function (err: Error, flvtool: string) {
-                    if (err) {
-                      return emitEnd(err);
-                    }
-
-                    async.each(
-                      flvmeta,
-                      function (output: any, cb: any) {
-                        spawn(flvtool, ["-U", output.target], { windowsHide: true })
-                          .on("error", function (err) {
-                            cb(
-                              new Error(
-                                "Error running " +
-                                  flvtool +
-                                  " on " +
-                                  output.target +
-                                  ": " +
-                                  err.message
-                              )
-                            );
-                          })
-                          .on("exit", function (code, signal) {
-                            if (code !== 0 || signal) {
-                              cb(
-                                new Error(
-                                  flvtool +
-                                    " " +
-                                    (signal
-                                      ? "received signal " + signal
-                                      : "exited with code " + code)
-                                ) +
-                                  " when running on " +
-                                  output.target
-                              );
-                            } else {
-                              cb();
-                            }
-                          });
-                      },
-                      function (err) {
-                        if (err) {
-                          emitEnd(err as Error);
-                        } else {
-                          emitEnd(null, stdoutRing.get(), stderrRing.get());
-                        }
-                      }
-                    );
-                  });
-                } else {
-                  emitEnd(null, stdoutRing.get(), stderrRing.get());
-                }
-              }
+              ffmpegProc.on("error", (procErr) => {
+                if (hasStream) this.emit("error", procErr);
+                else outStream.emit("error", procErr);
+              });
             }
           );
         });
 
-        return this;
+        return outStream;
       };
-
-  /**
-   * Renice current and/or future ffmpeg processes
-   *
-   * Ignored on Windows platforms.
-   *
-   * @method FfmpegCommand#renice
-   * @category Processing
-   *
-   * @param {Number} [niceness=0] niceness value between -20 (highest priority) and 20 (lowest priority)
-   * @return FfmpegCommand
-   */
-  proto.renice = function (this: any, niceness: number) {
-    if (!utils.isWindows) {
-      niceness = niceness || 0;
-
-      if (niceness < -20 || niceness > 20) {
-        this.logger.warn("Invalid niceness value: " + niceness + ", must be between -20 and 20");
-      }
-
-      niceness = Math.min(20, Math.max(-20, niceness));
-      this.options.niceness = niceness;
-
-      if (this.ffmpegProc) {
-        var logger = this.logger;
-        var pid = this.ffmpegProc.pid;
-        var renice = spawn("renice", [String(niceness), "-p", String(pid)], { windowsHide: true });
-
-        renice.on("error", function (err) {
-          logger.warn("could not renice process " + pid + ": " + err.message);
-        });
-
-        renice.on("exit", function (code, signal) {
-          if (signal) {
-            logger.warn(
-              "could not renice process " + pid + ": renice was killed by signal " + signal
-            );
-          } else if (code) {
-            logger.warn("could not renice process " + pid + ": renice exited with " + code);
-          } else {
-            logger.info("successfully reniced process " + pid + " to " + niceness + " niceness");
-          }
-        });
-      }
-    }
-
-    return this;
-  };
-
-  /**
-   * Kill current ffmpeg process, if any
-   *
-   * @method FfmpegCommand#kill
-   * @category Processing
-   *
-   * @param {String} [signal=SIGKILL] signal name
-   * @return FfmpegCommand
-   */
-  proto.kill = function (this: any, signal: string) {
-    if (!this.ffmpegProc) {
-      this.logger.warn("No running ffmpeg process, cannot send signal");
-    } else {
-      this.ffmpegProc.kill(signal || "SIGKILL");
-    }
-
-    return this;
-  };
 }

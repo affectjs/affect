@@ -17,6 +17,7 @@ const testRTPOut = "rtp://127.0.0.1:5540/input.mpg";
 describe("Processor", function () {
   // Shared context variables
   let testdir: string;
+  let outdir: string;
   let testfileName: string;
   let testfile: string;
   let testfilewide: string;
@@ -31,7 +32,7 @@ describe("Processor", function () {
   let createdDirs: string[] = [];
 
   // Helper method to get command and track process
-  function getCommand(args: any) {
+  function getCommand(args: unknown) {
     const cmd = new FfmpegCommand(args);
     cmd.on("start", function () {
       if (cmd.ffmpegProc) processes.push(cmd.ffmpegProc);
@@ -56,6 +57,13 @@ describe("Processor", function () {
   beforeAll(async () => {
     // check for ffmpeg installation
     testdir = path.join(__dirname, "assets");
+    outdir = path.join(testdir, "output");
+
+    // ensure output directory exists
+    if (!fs.existsSync(outdir)) {
+      fs.mkdirSync(outdir);
+    }
+
     testfileName = "testvideo-43.avi";
     testfile = path.join(testdir, testfileName);
     testfilewide = path.join(testdir, "testvideo-169.avi");
@@ -66,7 +74,7 @@ describe("Processor", function () {
     testfileaudio3 = path.join(testdir, "testaudio-three.wav");
 
     return new Promise<void>((resolve, reject) => {
-      exec(testhelper.getFfmpegCheck(), function (err: any) {
+      exec(testhelper.getFfmpegCheck(), function (err: unknown) {
         if (!err) {
           // check if all test files exist
           async.each(
@@ -79,8 +87,8 @@ describe("Processor", function () {
               testfileaudio2,
               testfileaudio3,
             ],
-            function (file: any, cb: any) {
-              fs.exists(file, function (exists: any) {
+            function (file: string | Buffer | URL, cb: (err: Error | null) => void) {
+              fs.exists(file, function (exists: boolean) {
                 cb(
                   exists
                     ? null
@@ -125,8 +133,8 @@ describe("Processor", function () {
     if (processes.length) {
       processes.forEach((proc) => {
         try {
-          proc.kill('SIGKILL');
-        } catch (e) {
+          proc.kill("SIGKILL");
+        } catch (e: unknown) {
           // Process may already be dead
         }
       });
@@ -137,8 +145,8 @@ describe("Processor", function () {
     await new Promise<void>((resolve) => {
       async.each(
         createdFiles,
-        function (file: any, cb: any) {
-          fs.exists(file, function (exists: any) {
+        function (file: unknown, cb: unknown) {
+          fs.exists(file, function (exists: unknown) {
             if (exists) {
               fs.unlink(file, cb);
             } else {
@@ -159,7 +167,7 @@ describe("Processor", function () {
       async.each(
         createdDirs,
         function (dir, cb) {
-          fs.exists(dir, function (exists: any) {
+          fs.exists(dir, function (exists: unknown) {
             if (exists) {
               fs.rmdir(dir, cb);
             } else {
@@ -190,7 +198,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testProcessRenice.avi");
+        const testFile = path.join(outdir, "testProcessRenice.avi");
         createdFiles.push(testFile);
 
         const ffmpegJob = getCommand({
@@ -230,7 +238,7 @@ describe("Processor", function () {
               }
             });
           })
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(reniced).toBe(true);
               expect(startCalled).toBe(true);
@@ -248,12 +256,12 @@ describe("Processor", function () {
 
     it("should change the working directory", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(testdir, "testvideo.avi");
+        const testFile = path.join(outdir, "testvideo.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfileName, logger: testhelper.logger, cwd: testdir })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             expect(err).toBeFalsy();
             reject(err);
@@ -267,7 +275,7 @@ describe("Processor", function () {
 
     it("should kill the process on timeout", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testProcessKillTimeout.avi");
+        const testFile = path.join(outdir, "testProcessKillTimeout.avi");
         createdFiles.push(testFile);
 
         const command = getCommand({ source: testfilebig, logger: testhelper.logger, timeout: 1 });
@@ -277,7 +285,7 @@ describe("Processor", function () {
           .on("start", function () {
             // wait for it
           })
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             saveOutput(stdout, stderr);
             try {
               expect(err.message).toContain("timeout");
@@ -324,7 +332,7 @@ describe("Processor", function () {
 
     it("should kill the process with .kill", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testProcessKill.avi");
+        const testFile = path.join(outdir, "testProcessKill.avi");
         createdFiles.push(testFile);
 
         const ffmpegJob = getCommand({
@@ -352,7 +360,7 @@ describe("Processor", function () {
               }, 1000);
             });
           })
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(err.message).toContain("ffmpeg was killed with signal SIGKILL");
               expect(startCalled).toBe(true);
@@ -372,7 +380,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testProcessKillCustom.avi");
+        const testFile = path.join(outdir, "testProcessKillCustom.avi");
         createdFiles.push(testFile);
 
         const ffmpegJob = getCommand({
@@ -400,7 +408,7 @@ describe("Processor", function () {
               }
             });
           })
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(startCalled).toBe(true);
               expect(err.message).toContain("timeout");
@@ -423,11 +431,11 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testOnCodecData.avi");
+        const testFile = path.join(outdir, "testOnCodecData.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfilebig, logger: testhelper.logger })
-          .on("codecData", function (data: any) {
+          .on("codecData", function (data: unknown) {
             try {
               expect(data).toHaveProperty("audio");
               expect(data).toHaveProperty("video");
@@ -436,7 +444,7 @@ describe("Processor", function () {
             }
           })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -451,11 +459,11 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testOnCodecData.avi");
+        const testFile = path.join(outdir, "testOnCodecData.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: fs.createReadStream(testfilebig), logger: testhelper.logger })
-          .on("codecData", function (data: any) {
+          .on("codecData", function (data: unknown) {
             try {
               expect(data).toHaveProperty("audio");
               expect(data).toHaveProperty("video");
@@ -464,7 +472,7 @@ describe("Processor", function () {
             }
           })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -479,7 +487,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testOnCodecData.wav");
+        const testFile = path.join(outdir, "testOnCodecData.wav");
         createdFiles.push(testFile);
 
         getCommand({ logger: testhelper.logger })
@@ -493,7 +501,7 @@ describe("Processor", function () {
               reject(e);
             }
           })
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -508,7 +516,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testOnProgress.avi");
+        const testFile = path.join(outdir, "testOnProgress.avi");
         let gotProgress = false;
 
         createdFiles.push(testFile);
@@ -518,7 +526,7 @@ describe("Processor", function () {
             gotProgress = true;
           })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -538,7 +546,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testStart.avi");
+        const testFile = path.join(outdir, "testStart.avi");
         let startCalled = false;
 
         createdFiles.push(testFile);
@@ -557,7 +565,7 @@ describe("Processor", function () {
             }
           })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -577,17 +585,17 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testStderr.avi");
+        const testFile = path.join(outdir, "testStderr.avi");
         const lines: string[] = [];
 
         createdFiles.push(testFile);
 
         getCommand({ source: testfile, logger: testhelper.logger })
-          .on("stderr", function (line: any) {
+          .on("stderr", function (line: unknown) {
             lines.push(line);
           })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -610,13 +618,13 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 60000 });
 
-        const testFile = path.join(__dirname, "assets", "testLimit10.avi");
+        const testFile = path.join(outdir, "testLimit10.avi");
 
         createdFiles.push(testFile);
 
         getCommand({ stdoutLines: 10, source: testfile, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -630,11 +638,11 @@ describe("Processor", function () {
   });
 
   describe("takeScreenshots", function () {
-    function testScreenshots(title: string, name: string, config: any, files: string[]) {
+    function testScreenshots(title: string, name: string, config: unknown, files: string[]) {
       it(title, function () {
         return new Promise<void>((resolve, reject) => {
           let filenamesCalled = false;
-          const testFolder = path.join(__dirname, "assets", "screenshots_" + name);
+          const testFolder = path.join(outdir, "screenshots_" + name);
 
           files.forEach(function (file) {
             createdFiles.push(path.join(testFolder, file));
@@ -642,7 +650,7 @@ describe("Processor", function () {
           createdDirs.push(testFolder);
 
           getCommand({ source: testfile, logger: testhelper.logger })
-            .on("error", function (err: any, stdout: any, stderr: any) {
+            .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
               testhelper.logError(err, stdout, stderr);
               reject(err);
             })
@@ -650,7 +658,7 @@ describe("Processor", function () {
               filenamesCalled = true;
               try {
                 expect(filenames.length).toBe(files.length);
-                filenames.forEach(function (file: any, index: any) {
+                filenames.forEach(function (file: unknown, index: unknown) {
                   expect(file).toBe(files[index]);
                 });
               } catch (e) {
@@ -801,12 +809,12 @@ describe("Processor", function () {
   describe("saveToFile", function () {
     it("should save the output file properly to disk", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testConvertToFile.avi");
+        const testFile = path.join(outdir, "testConvertToFile.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfile, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -840,12 +848,12 @@ describe("Processor", function () {
 
     it("should save an output file with special characters properly to disk", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "te[s]t video ' \" .avi");
+        const testFile = path.join(outdir, "te[s]t video ' \" .avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfile, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -858,12 +866,12 @@ describe("Processor", function () {
 
     it("should save output files with special characters", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "[test \"special ' char*cters \n.avi");
+        const testFile = path.join(outdir, "[test \"special ' char*cters \n.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfile, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -897,13 +905,13 @@ describe("Processor", function () {
 
     it("should accept a stream as its source", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testConvertFromStreamToFile.avi");
+        const testFile = path.join(outdir, "testConvertFromStreamToFile.avi");
         createdFiles.push(testFile);
 
         const instream = fs.createReadStream(testfile);
         getCommand({ source: instream, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -937,7 +945,7 @@ describe("Processor", function () {
 
     it("should pass input stream errors through to error handler", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testConvertFromStream.avi");
+        const testFile = path.join(outdir, "testConvertFromStream.avi");
 
         const readError = new Error("Read Error");
         const instream = new Readable({
@@ -965,7 +973,7 @@ describe("Processor", function () {
               });
             });
           })
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             saveOutput(stdout, stderr);
             try {
               expect(startCalled).toBe(true);
@@ -976,7 +984,7 @@ describe("Processor", function () {
               reject(e);
             }
           })
-          .on("end", function (stdout: any, stderr: any) {
+          .on("end", function (stdout: unknown, stderr: unknown) {
             testhelper.logOutput(stdout, stderr);
             reject(new Error("end was called, expected a error"));
           })
@@ -988,11 +996,11 @@ describe("Processor", function () {
   describe("mergeToFile", function () {
     it("should merge multiple files", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testMergeAddOption.wav");
+        const testFile = path.join(outdir, "testMergeAddOption.wav");
         createdFiles.push(testFile);
 
         getCommand({ source: testfileaudio1, logger: testhelper.logger })
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -1030,17 +1038,17 @@ describe("Processor", function () {
   describe("writeToStream", function () {
     it("should save the output file properly to disk using a stream", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testConvertToStream.avi");
+        const testFile = path.join(outdir, "testConvertToStream.avi");
         createdFiles.push(testFile);
 
         const outstream = fs.createWriteStream(testFile);
         getCommand({ source: testfile, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
-          .on("end", function (stdout: any, stderr: any) {
+          .on("end", function (stdout: unknown, stderr: unknown) {
             fs.exists(testFile, function (exist) {
               if (!exist) {
                 console.log(stderr);
@@ -1074,7 +1082,7 @@ describe("Processor", function () {
 
     it("should accept a stream as its source", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testConvertFromStreamToStream.avi");
+        const testFile = path.join(outdir, "testConvertFromStreamToStream.avi");
         createdFiles.push(testFile);
 
         const instream = fs.createReadStream(testfile);
@@ -1082,11 +1090,11 @@ describe("Processor", function () {
 
         getCommand({ source: instream, logger: testhelper.logger })
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
-          .on("end", function (stdout: any, stderr: any) {
+          .on("end", function (stdout: unknown, stderr: unknown) {
             fs.exists(testFile, function (exist) {
               if (!exist) {
                 console.log(stderr);
@@ -1124,7 +1132,7 @@ describe("Processor", function () {
         // Skip for now or reimplement if needed. Vitest might not like conditionally ran tests defined this way perfectly but it should work.
         // Simplified:
         return new Promise<void>((resolve, reject) => {
-          const testFile = path.join(__dirname, "assets", "testConvertToStream.avi");
+          const testFile = path.join(outdir, "testConvertToStream.avi");
           createdFiles.push(testFile);
 
           const outstream = fs.createWriteStream(testFile);
@@ -1132,11 +1140,11 @@ describe("Processor", function () {
 
           command
             .usingPreset("divx")
-            .on("error", function (err: any, stdout: any, stderr: any) {
+            .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
               testhelper.logError(err, stdout, stderr);
               reject(err);
             })
-            .on("end", function (stdout: any, stderr: any) {
+            .on("end", function (stdout: unknown, stderr: unknown) {
               fs.exists(testFile, function (exist) {
                 try {
                   expect(exist).toBe(true);
@@ -1189,7 +1197,7 @@ describe("Processor", function () {
               resolve();
             });
           })
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             saveOutput(stdout, stderr);
             try {
               expect(startCalled).toBe(true);
@@ -1200,7 +1208,7 @@ describe("Processor", function () {
               reject(e);
             }
           })
-          .on("end", function (stdout: any, stderr: any) {
+          .on("end", function (stdout: unknown, stderr: unknown) {
             testhelper.logOutput(stdout, stderr);
             reject(new Error("end was called, expected a error"));
           })
@@ -1212,13 +1220,11 @@ describe("Processor", function () {
   describe("Outputs", function () {
     it("should create multiple outputs", function () {
       return new Promise<void>((resolve, reject) => {
-        vi.setConfig({ testTimeout: 30000 });
-
-        const testFile1 = path.join(__dirname, "assets", "testMultipleOutput1.avi");
+        const testFile1 = path.join(outdir, "testMultipleOutput1.avi");
         createdFiles.push(testFile1);
-        const testFile2 = path.join(__dirname, "assets", "testMultipleOutput2.avi");
+        const testFile2 = path.join(outdir, "testMultipleOutput2.avi");
         createdFiles.push(testFile2);
-        const testFile3 = path.join(__dirname, "assets", "testMultipleOutput3.mp4");
+        const testFile3 = path.join(outdir, "testMultipleOutput3.mp4");
         createdFiles.push(testFile3);
 
         getCommand({ source: testfilebig, logger: testhelper.logger })
@@ -1232,7 +1238,7 @@ describe("Processor", function () {
           .withSize("160x120")
           .withAudioCodec("aac")
           .withVideoCodec("libx264")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             reject(err);
           })
@@ -1240,11 +1246,11 @@ describe("Processor", function () {
             async.map(
               [testFile1, testFile2, testFile3],
               function (file: any, cb: any) {
-                fs.exists(file, function (exist) {
+                fs.exists(file, function (exist: boolean) {
                   try {
                     expect(exist).toBe(true);
                     // check filesize
-                    fs.stat(file, function (err, stats) {
+                    fs.stat(file, function (err: Error | null, stats: fs.Stats) {
                       if (err) {
                         cb(err);
                         return;
@@ -1266,7 +1272,7 @@ describe("Processor", function () {
               function (err: any) {
                 if (err) {
                   testhelper.logError(err);
-                  reject(err);
+                  reject(err as Error);
                 } else {
                   resolve();
                 }
@@ -1275,19 +1281,19 @@ describe("Processor", function () {
           })
           .run();
       });
-    });
+    }, 60000);
   });
 
   describe("Inputs", function () {
     it("should take input from a file with special characters", function () {
       return new Promise<void>((resolve, reject) => {
-        const testFile = path.join(__dirname, "assets", "testSpecialInput.avi");
+        const testFile = path.join(outdir, "testSpecialInput.avi");
         createdFiles.push(testFile);
 
         getCommand({ source: testfilespecial, logger: testhelper.logger, timeout: 10 })
           .takeFrames(50)
           .usingPreset("divx")
-          .on("error", function (err: any, stdout: any, stderr: any) {
+          .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             expect(err).toBeFalsy();
           })
@@ -1330,7 +1336,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         vi.setConfig({ testTimeout: 10000 });
 
-        const testFile = path.join(__dirname, "assets", "testErrorKill.avi");
+        const testFile = path.join(outdir, "testErrorKill.avi");
         createdFiles.push(testFile);
 
         const command = getCommand({ source: testfilebig, logger: testhelper.logger });
@@ -1342,7 +1348,7 @@ describe("Processor", function () {
               command.kill("SIGKILL");
             }, 1000);
           })
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(err.message).toMatch(/ffmpeg was killed with signal SIGKILL/);
               resolve();
@@ -1361,7 +1367,7 @@ describe("Processor", function () {
       return new Promise<void>((resolve, reject) => {
         getCommand({ source: testfilebig, logger: testhelper.logger })
           .addOption("-invalidoption")
-          .on("error", function (err: any) {
+          .on("error", function (err: unknown) {
             try {
               expect(err.message).toMatch(/Unrecognized option 'invalidoption'/);
               resolve();

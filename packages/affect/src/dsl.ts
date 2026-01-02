@@ -19,7 +19,7 @@ export interface DslConfig {
         bitrate?: string | number;
         size?: string;
         fps?: number;
-        filters?: Array<string | { filter: string; options?: string | string[] | Record<string, any> }>;
+        filters?: Array<string | { filter: string; options?: string | string[] | Record<string, unknown> }>;
         noVideo?: boolean;
     };
     audio?: {
@@ -55,7 +55,7 @@ export function compileDslToJs(config: DslConfig, outputPath?: string): string {
 
     // Handle inputs
     const inputs = Array.isArray(config.input) ? config.input : [config.input];
-    let commandVar = "command";
+    const commandVar = "command";
     
     if (inputs.length === 1) {
         lines.push(`const ${commandVar} = ffmpeg('${inputs[0]}');`);
@@ -92,7 +92,7 @@ export function compileDslToJs(config: DslConfig, outputPath?: string): string {
                     if (typeof filter === 'string') {
                         return `'${filter}'`;
                     } else {
-                        const filterObj: any = { filter: filter.filter };
+                        const filterObj: unknown = { filter: filter.filter };
                         if (filter.options) {
                             if (typeof filter.options === 'string') {
                                 filterObj.options = filter.options;

@@ -15,7 +15,7 @@ async function runBenchmark() {
     await runtime.execute(
       {
         input: "placeholder.jpg",
-        operations: [{ type: "resize", width: 100 } as any],
+        operations: [{ type: "resize", width: 100 } as unknown],
       },
       {
         "placeholder.jpg": new Uint8Array(1024 * 1024), // 1MB

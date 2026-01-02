@@ -1,13 +1,12 @@
 /*jshint node:true*/
 import utils from "../utils";
 
-
 /*
  *! Audio-related methods
  */
 
-import type { FfmpegCommand } from "../utils";
-export default function(proto: FfmpegCommand) {
+import type { FfmpegCommand, FilterSpec } from "../utils";
+export default function (proto: FfmpegCommand) {
   /**
    * Disable audio in the output
    *
@@ -16,15 +15,13 @@ export default function(proto: FfmpegCommand) {
    * @aliases withNoAudio
    * @return FfmpegCommand
    */
-  proto.withNoAudio =
-  proto.noAudio = function() {
+  proto.withNoAudio = proto.noAudio = function () {
     this._currentOutput.audio.clear();
     this._currentOutput.audioFilters.clear();
-    this._currentOutput.audio('-an');
+    this._currentOutput.audio("-an");
 
     return this;
   };
-
 
   /**
    * Specify audio codec
@@ -36,13 +33,11 @@ export default function(proto: FfmpegCommand) {
    * @param {String} codec audio codec name
    * @return FfmpegCommand
    */
-  proto.withAudioCodec =
-  proto.audioCodec = function(codec) {
-    this._currentOutput.audio('-acodec', codec);
+  proto.withAudioCodec = proto.audioCodec = function (codec) {
+    this._currentOutput.audio("-acodec", codec);
 
     return this;
   };
-
 
   /**
    * Specify audio bitrate
@@ -54,12 +49,10 @@ export default function(proto: FfmpegCommand) {
    * @param {String|Number} bitrate audio bitrate in kbps (with an optional 'k' suffix)
    * @return FfmpegCommand
    */
-  proto.withAudioBitrate =
-  proto.audioBitrate = function(bitrate) {
-    this._currentOutput.audio('-b:a', ('' + bitrate).replace(/k?$/, 'k'));
+  proto.withAudioBitrate = proto.audioBitrate = function (bitrate) {
+    this._currentOutput.audio("-b:a", ("" + bitrate).replace(/k?$/, "k"));
     return this;
   };
-
 
   /**
    * Specify audio channel count
@@ -71,12 +64,10 @@ export default function(proto: FfmpegCommand) {
    * @param {Number} channels channel count
    * @return FfmpegCommand
    */
-  proto.withAudioChannels =
-  proto.audioChannels = function(channels) {
-    this._currentOutput.audio('-ac', channels);
+  proto.withAudioChannels = proto.audioChannels = function (channels) {
+    this._currentOutput.audio("-ac", channels);
     return this;
   };
-
 
   /**
    * Specify audio frequency
@@ -88,12 +79,10 @@ export default function(proto: FfmpegCommand) {
    * @param {Number} freq audio frequency in Hz
    * @return FfmpegCommand
    */
-  proto.withAudioFrequency =
-  proto.audioFrequency = function(freq) {
-    this._currentOutput.audio('-ar', freq);
+  proto.withAudioFrequency = proto.audioFrequency = function (freq) {
+    this._currentOutput.audio("-ar", freq);
     return this;
   };
-
 
   /**
    * Specify audio quality
@@ -105,12 +94,10 @@ export default function(proto: FfmpegCommand) {
    * @param {Number} quality audio quality factor
    * @return FfmpegCommand
    */
-  proto.withAudioQuality =
-  proto.audioQuality = function(quality) {
-    this._currentOutput.audio('-aq', quality);
+  proto.withAudioQuality = proto.audioQuality = function (quality) {
+    this._currentOutput.audio("-aq", quality);
     return this;
   };
-
 
   /**
    * Specify custom audio filter(s)
@@ -160,18 +147,18 @@ export default function(proto: FfmpegCommand) {
    * @return FfmpegCommand
    */
   proto.withAudioFilter =
-  proto.withAudioFilters =
-  proto.audioFilter =
-  proto.audioFilters = function(filters) {
-    if (arguments.length > 1) {
-      filters = [].slice.call(arguments);
-    }
+    proto.withAudioFilters =
+    proto.audioFilter =
+    proto.audioFilters =
+      function (...filters: (string | FilterSpec)[]) {
+        let finalFilters: (string | FilterSpec)[];
+        if (filters.length === 1 && Array.isArray(filters[0])) {
+          finalFilters = filters[0] as (string | FilterSpec)[];
+        } else {
+          finalFilters = filters;
+        }
 
-    if (!Array.isArray(filters)) {
-      filters = [filters];
-    }
-
-    this._currentOutput.audioFilters(utils.makeFilterStrings(filters));
-    return this;
-  };
-};
+        this._currentOutput.audioFilters(utils.makeFilterStrings(finalFilters));
+        return this;
+      };
+}

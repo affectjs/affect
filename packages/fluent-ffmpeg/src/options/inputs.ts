@@ -25,15 +25,15 @@ export default function(proto: FfmpegCommand) {
   proto.mergeAdd =
   proto.addInput =
   proto.input = function(source) {
-    var isFile = false;
-    var isStream = false;
+    let isFile = false;
+    let isStream = false;
 
     if (typeof source !== 'string') {
       if (!('readable' in source) || !(source.readable)) {
         throw new Error('Invalid input');
       }
 
-      var hasInputStream = this._inputs.some(function(input) {
+      const hasInputStream = this._inputs.some(function(input) {
         return input.isStream;
       });
 
@@ -44,7 +44,7 @@ export default function(proto: FfmpegCommand) {
       isStream = true;
       source.pause();
     } else {
-      var protocol = source.match(/^([a-z]{2,}):/i);
+      const protocol = source.match(/^([a-z]{2,}):/i);
       isFile = !protocol || protocol[0] === 'file';
     }
 

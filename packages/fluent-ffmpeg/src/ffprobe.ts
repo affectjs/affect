@@ -1,63 +1,84 @@
 /*jshint node:true, laxcomma:true*/
-import { spawn } from "child_process";
+import { spawn, ChildProcessWithoutNullStreams } from "child_process";
+import { type FfmpegCommand } from "./utils.js";
 
-function legacyTag(key: string) {
-  return key.match(/^TAG:/);
-}
-function legacyDisposition(key: string) {
-  return key.match(/^DISPOSITION:/);
+export interface FfprobeStream extends Record<string, unknown> {
+  codec_type?: string;
+  width?: number;
+  height?: number;
+  duration?: string | number;
+  bit_rate?: string | number;
 }
 
-function parseFfprobeOutput(out: string) {
-  var lines = out.split(/\r\n|\r|\n/);
+export interface FfprobeFormat extends Record<string, unknown> {
+  duration?: string | number;
+  bit_rate?: string | number;
+  tags?: Record<string, unknown>;
+}
+
+export interface FfprobeData {
+  streams: FfprobeStream[];
+  format: FfprobeFormat;
+  chapters: Record<string, unknown>[];
+}
+
+function legacyTag(key: string): boolean {
+  return !!key.match(/^TAG:/);
+}
+function legacyDisposition(key: string): boolean {
+  return !!key.match(/^DISPOSITION:/);
+}
+
+function parseFfprobeOutput(out: string): FfprobeData {
+  let lines = out.split(/\r\n|\r|\n/);
 
   lines = lines.filter(function (line) {
     return line.length > 0;
   });
 
-  var data: any = {
+  const data: FfprobeData = {
     streams: [],
     format: {},
     chapters: [],
   };
 
-  function parseBlock(name: string) {
-    var data: Record<string, any> = {};
+  function parseBlock(name: string): Record<string, unknown> {
+    const blockData: Record<string, unknown> = {};
 
-    var line = lines.shift();
+    let line = lines.shift();
     while (typeof line !== "undefined") {
-      if (line.toLowerCase() == "[/" + name + "]") {
-        return data;
+      if (line.toLowerCase() === "[/" + name + "]") {
+        return blockData;
       } else if (line.match(/^\[/)) {
         line = lines.shift();
         continue;
       }
 
-      var kv = line.match(/^([^=]+)=(.*)$/);
+      const kv = line.match(/^([^=]+)=(.*)$/);
       if (kv) {
         if (!kv[1].match(/^TAG:/) && kv[2].match(/^[0-9]+(\.[0-9]+)?$/)) {
-          data[kv[1]] = Number(kv[2]);
+          blockData[kv[1]] = Number(kv[2]);
         } else {
-          data[kv[1]] = kv[2];
+          blockData[kv[1]] = kv[2];
         }
       }
 
       line = lines.shift();
     }
 
-    return data;
+    return blockData;
   }
 
-  var line = lines.shift();
+  let line = lines.shift();
   while (typeof line !== "undefined") {
     if (line.match(/^\[stream/i)) {
-      var stream = parseBlock("stream");
+      const stream = parseBlock("stream") as FfprobeStream;
       data.streams.push(stream);
     } else if (line.match(/^\[chapter/i)) {
-      var chapter = parseBlock("chapter");
+      const chapter = parseBlock("chapter");
       data.chapters.push(chapter);
     } else if (line.toLowerCase() === "[format]") {
-      data.format = parseBlock("format");
+      data.format = parseBlock("format") as FfprobeFormat;
     }
 
     line = lines.shift();
@@ -66,21 +87,11 @@ function parseFfprobeOutput(out: string) {
   return data;
 }
 
-export default function (proto: any) {
-  /**
-   * A callback passed to the {@link FfmpegCommand#ffprobe} method.
-   *
-   * @callback FfmpegCommand~ffprobeCallback
-   *
-   * @param {Error|null} err error object or null if no error happened
-   * @param {Object} ffprobeData ffprobe output data; this object
-   *   has the same format as what the following command returns:
-   *
-   *     `ffprobe -print_format json -show_streams -show_format INPUTFILE`
-   * @param {Array} ffprobeData.streams stream information
-   * @param {Object} ffprobeData.format format information
-   */
-
+/**
+ * ffprobe exports
+ * @param {Object} proto prototype to extend
+ */
+export default function (proto: Record<string, unknown>) {
   /**
    * Run ffprobe on last specified input
    *
@@ -89,37 +100,40 @@ export default function (proto: any) {
    *
    * @param {?Number} [index] 0-based index of input to probe (defaults to last input)
    * @param {?String[]} [options] array of output options to return
-   * @param {FfmpegCommand~ffprobeCallback} callback callback function
+   * @param {Function} callback callback function
    *
    */
-  proto.ffprobe = function (this: any) {
-    var input,
-      index = null,
-      options = [],
-      callback;
+  proto.ffprobe = function (this: FfmpegCommand, ...args: unknown[]) {
+    let input: FfmpegCommand["_inputs"][number];
+    let index: number | null = null;
+    let options: string[] = [];
 
     // the last argument should be the callback
-    var callback: any = arguments[arguments.length - 1];
+    const lastArg = args[args.length - 1];
+    if (typeof lastArg !== "function") {
+      throw new Error("ffprobe: callback argument must be a function");
+    }
+    const callback = lastArg as (err: Error | null, data?: FfprobeData) => void;
 
-    var ended = false;
-    function handleCallback(err: Error | null, data?: any) {
+    let ended = false;
+    const handleCallback = (err: Error | null, data?: FfprobeData) => {
       if (!ended) {
         ended = true;
         callback(err, data);
       }
-    }
+    };
 
     // map the arguments to the correct variable names
-    switch (arguments.length) {
+    switch (args.length) {
       case 3:
-        index = arguments[0];
-        options = arguments[1];
+        index = args[0] as number;
+        options = args[1] as string[];
         break;
       case 2:
-        if (typeof arguments[0] === "number") {
-          index = arguments[0];
-        } else if (Array.isArray(arguments[0])) {
-          options = arguments[0];
+        if (typeof args[0] === "number") {
+          index = args[0];
+        } else if (Array.isArray(args[0])) {
+          options = args[0] as string[];
         }
         break;
     }
@@ -139,23 +153,20 @@ export default function (proto: any) {
     }
 
     // Find ffprobe
-    this._getFfprobePath(function (err: Error, path: string) {
+    this._getFfprobePath((err: Error | null, path: string) => {
       if (err) {
         return handleCallback(err);
       } else if (!path) {
         return handleCallback(new Error("Cannot find ffprobe"));
       }
 
-      var stdout = "";
-      var stdoutClosed = false;
-      var stderr = "";
-      var stderrClosed = false;
+      let stdout = "";
+      let stdoutClosed = false;
+      let stderr = "";
+      let stderrClosed = false;
 
       // Spawn ffprobe
-      // Use -of (or -print_format for older versions) to ensure consistent output format
-      // FFmpeg 6.1.1+ recommends -of, and -output_format is an alias
-      // Check if output format is already specified in options
-      var hasOutputFormat = options.some(function (opt: any) {
+      const hasOutputFormat = options.some(function (opt: string) {
         return (
           typeof opt === "string" &&
           (opt === "-of" ||
@@ -167,44 +178,51 @@ export default function (proto: any) {
         );
       });
 
-      var ffprobeArgs = ["-show_streams", "-show_format"];
+      let ffprobeArgs = ["-show_streams", "-show_format"];
       if (!hasOutputFormat) {
-        // Default to ini format for backward compatibility with parseFfprobeOutput
-        // Try -of first (FFmpeg 6.1.1+), fallback to -print_format for older versions
         ffprobeArgs.push("-of", "default");
       }
-      var src = input.isStream ? "pipe:0" : input.source;
+      const src = input.isStream ? "pipe:0" : (input.source as string);
       ffprobeArgs = ffprobeArgs.concat(options, src);
 
-      var ffprobe = spawn(path, ffprobeArgs, { windowsHide: true });
+      const ffprobe = spawn(path, ffprobeArgs, {
+        windowsHide: true,
+      }) as ChildProcessWithoutNullStreams;
 
       if (input.isStream) {
-        // Skip errors on stdin. These get thrown when ffprobe is complete and
-        // there seems to be no way hook in and close stdin before it throws.
-        ffprobe.stdin!.on("error", function (err: any) {
-          if (["ECONNRESET", "EPIPE", "EOF"].indexOf(err.code) >= 0) {
+        ffprobe.stdin.on("error", (stdinErr: Error & { code?: string }) => {
+          if (["ECONNRESET", "EPIPE", "EOF"].indexOf(stdinErr.code || "") >= 0) {
             return;
           }
-          handleCallback(err);
+          handleCallback(stdinErr);
         });
 
-        // Once ffprobe's input stream closes, we need no more data from the
-        // input
-        ffprobe.stdin!.on("close", function () {
-          input.source.pause();
-          input.source.unpipe(ffprobe.stdin);
+        ffprobe.stdin.on("close", () => {
+          const source = input.source as { pause?: () => void; unpipe?: (dest: unknown) => void };
+          if (source && typeof source.pause === "function") {
+            source.pause();
+            if (typeof source.unpipe === "function") {
+              source.unpipe(ffprobe.stdin);
+            }
+          }
         });
 
-        input.source.pipe(ffprobe.stdin);
+        const source = input.source as { pipe?: (dest: unknown) => void };
+        if (source && typeof source.pipe === "function") {
+          source.pipe(ffprobe.stdin);
+        }
       }
 
-      ffprobe.on("error", callback);
+      ffprobe.on("error", (spawnErr: Error) => {
+        handleCallback(spawnErr);
+      });
 
-      // Ensure we wait for captured streams to end before calling callback
-      var exitError: Error | null = null;
-      function handleExit(err?: Error) {
-        if (err) {
-          exitError = err;
+      let exitError: Error | null = null;
+      let processExited = false;
+
+      const handleExit = (exitErr?: Error) => {
+        if (exitErr) {
+          exitError = exitErr;
         }
 
         if (processExited && stdoutClosed && stderrClosed) {
@@ -216,43 +234,44 @@ export default function (proto: any) {
             return handleCallback(exitError);
           }
 
-          // Process output
-          var data = parseFfprobeOutput(stdout);
+          const data = parseFfprobeOutput(stdout);
 
-          // Handle legacy output with "TAG:x" and "DISPOSITION:x" keys
-          [data.format].concat(data.streams).forEach(function (target: any) {
-            if (target) {
-              var legacyTagKeys = Object.keys(target).filter(legacyTag);
+          (data.streams as (FfprobeStream | FfprobeFormat)[])
+            .concat([data.format])
+            .forEach(function (target) {
+              if (target && typeof target === "object") {
+                const obj = target as Record<string, unknown>;
+                const legacyTagKeys = Object.keys(obj).filter(legacyTag);
 
-              if (legacyTagKeys.length) {
-                target.tags = target.tags || {};
+                if (legacyTagKeys.length) {
+                  const tags = (obj.tags || {}) as Record<string, unknown>;
+                  obj.tags = tags;
 
-                legacyTagKeys.forEach(function (tagKey) {
-                  target.tags[tagKey.substr(4)] = target[tagKey];
-                  delete target[tagKey];
-                });
+                  legacyTagKeys.forEach(function (tagKey) {
+                    tags[tagKey.substr(4)] = obj[tagKey];
+                    delete obj[tagKey];
+                  });
+                }
+
+                const legacyDispositionKeys = Object.keys(obj).filter(legacyDisposition);
+
+                if (legacyDispositionKeys.length) {
+                  const disposition = (obj.disposition || {}) as Record<string, unknown>;
+                  obj.disposition = disposition;
+
+                  legacyDispositionKeys.forEach(function (dispositionKey) {
+                    disposition[dispositionKey.substr(12)] = obj[dispositionKey];
+                    delete obj[dispositionKey];
+                  });
+                }
               }
-
-              var legacyDispositionKeys = Object.keys(target).filter(legacyDisposition);
-
-              if (legacyDispositionKeys.length) {
-                target.disposition = target.disposition || {};
-
-                legacyDispositionKeys.forEach(function (dispositionKey) {
-                  target.disposition[dispositionKey.substr(12)] = target[dispositionKey];
-                  delete target[dispositionKey];
-                });
-              }
-            }
-          });
+            });
 
           handleCallback(null, data);
         }
-      }
+      };
 
-      // Handle ffprobe exit
-      var processExited = false;
-      ffprobe.on("exit", function (code, signal) {
+      ffprobe.on("exit", (code: number | null, signal: string | null) => {
         processExited = true;
 
         if (code) {
@@ -264,21 +283,20 @@ export default function (proto: any) {
         }
       });
 
-      // Handle stdout/stderr streams
-      ffprobe.stdout!.on("data", function (data) {
+      ffprobe.stdout.on("data", (data: string | Buffer) => {
         stdout += data;
       });
 
-      ffprobe.stdout!.on("close", function () {
+      ffprobe.stdout.on("close", () => {
         stdoutClosed = true;
         handleExit();
       });
 
-      ffprobe.stderr!.on("data", function (data) {
+      ffprobe.stderr.on("data", (data: string | Buffer) => {
         stderr += data;
       });
 
-      ffprobe.stderr!.on("close", function () {
+      ffprobe.stderr.on("close", () => {
         stderrClosed = true;
         handleExit();
       });

@@ -9,7 +9,7 @@ import type { Operation } from "@affectjs/runtime";
 // AST types (moved from compiler.ts)
 export interface ASTNode {
     type: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface Program {
@@ -29,7 +29,7 @@ export interface AffectBlock {
 }
 
 export interface CompileToOperationsOptions {
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
     warnings?: boolean; // Enable/disable warnings (default: true)
 }
 
@@ -44,7 +44,7 @@ export interface CompiledOperations {
 /**
  * Resolve value from AST node (Variable, Literal, or direct value)
  */
-function resolveValue(value: any, context: Record<string, any>): any {
+function resolveValue(value: unknown, context: Record<string, unknown>): unknown {
     if (!value) return null;
     
     if (typeof value === "string" || typeof value === "number") {
@@ -92,8 +92,8 @@ export function compileToOperations(
             : [];
 
     // Find input and output
-    let inputValue: any = null;
-    let outputValue: any = null;
+    let inputValue: unknown = null;
+    let outputValue: unknown = null;
     let mediaType: "auto" | "video" | "audio" | "image" = "auto";
 
     if (ast.type === "AffectBlock") {
@@ -141,7 +141,7 @@ export function compileToOperations(
         "NoAudio",
     ];
 
-    const shouldIgnoreCommand = (cmd: any): boolean => {
+    const shouldIgnoreCommand = (cmd: unknown): boolean => {
         if (cmd.type === "Input" || cmd.type === "Save") {
             return true; // Always skip Input and Save
         }
@@ -179,7 +179,7 @@ export function compileToOperations(
     };
 
     // Process commands and convert to operations
-    const processCommand = (cmd: any): void => {
+    const processCommand = (cmd: unknown): void => {
         if (shouldIgnoreCommand(cmd)) {
             return;
         }
@@ -191,12 +191,12 @@ export function compileToOperations(
                     type: "if",
                     condition: cmd.condition,
                     thenOperations: cmd.thenCommands
-                        ?.filter((c: any) => !shouldIgnoreCommand(c))
-                        .map((c: any) => commandToOperation(c))
+                        ?.filter((c: unknown) => !shouldIgnoreCommand(c))
+                        .map((c: unknown) => commandToOperation(c))
                         .filter(Boolean) || [],
                     elseOperations: cmd.elseCommands
-                        ?.filter((c: any) => !shouldIgnoreCommand(c))
-                        .map((c: any) => commandToOperation(c))
+                        ?.filter((c: unknown) => !shouldIgnoreCommand(c))
+                        .map((c: unknown) => commandToOperation(c))
                         .filter(Boolean) || [],
                 });
                 break;
@@ -206,7 +206,7 @@ export function compileToOperations(
             case "AudioBlock":
             case "FilterBlock":
                 if (cmd.commands && Array.isArray(cmd.commands)) {
-                    cmd.commands.forEach((subCmd: any) => processCommand(subCmd));
+                    cmd.commands.forEach((subCmd: unknown) => processCommand(subCmd));
                 }
                 break;
 
@@ -271,13 +271,13 @@ export function compileToOperations(
                 break;
 
             case "VideoSize":
-                const sizeParts = resolveValue(cmd.size, context)?.split("x") || [];
+                { const sizeParts = resolveValue(cmd.size, context)?.split("x") || [];
                 operations.push({
                     type: "resize",
                     width: sizeParts[0] || "auto",
                     height: sizeParts[1] || "auto",
                 });
-                break;
+                break; }
 
             case "VideoFPS":
                 operations.push({
@@ -353,7 +353,7 @@ export function compileToOperations(
     };
 
     // Helper to convert command to operation (for nested commands in conditions)
-    const commandToOperation = (cmd: any): Operation | null => {
+    const commandToOperation = (cmd: unknown): Operation | null => {
         if (shouldIgnoreCommand(cmd)) {
             return null;
         }

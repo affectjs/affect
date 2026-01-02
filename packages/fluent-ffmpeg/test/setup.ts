@@ -15,7 +15,7 @@ if (!process.env.FFMPEG_PATH || !process.env.FFPROBE_PATH) {
     if (data.config && data.config.ffprobe) {
       process.env.FFPROBE_PATH = data.config.ffprobe;
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.warn("Failed to auto-configure FFmpeg paths via fluent-setup:", e.message);
   }
 }

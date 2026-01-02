@@ -17,7 +17,7 @@ export class RuntimeWorker {
   private heifBackend = new HeifBackend();
   private imageAdapter = new ImageAdapter();
   private ready = false;
-  private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+  private listeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
 
   async initialize(): Promise<void> {
     if (this.ready) return;
@@ -33,14 +33,14 @@ export class RuntimeWorker {
     await this.initialize();
   }
 
-  async addEventListener(event: string, callback: (...args: any[]) => void) {
+  async addEventListener(event: string, callback: (...args: unknown[]) => void) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(callback);
   }
 
-  private emit(event: string, ...args: any[]) {
+  private emit(event: string, ...args: unknown[]) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach((cb) => cb(...args));
@@ -140,7 +140,7 @@ export class RuntimeWorker {
         logs,
         metrics: { duration: performance.now() - startTime },
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       return { success: false, error: e, logs };
     }
   }

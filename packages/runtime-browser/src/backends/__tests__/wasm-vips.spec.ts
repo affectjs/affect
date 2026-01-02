@@ -41,7 +41,7 @@ describe("WasmVipsBackend", () => {
   });
 
   it("should initialize and execute resize operation", async () => {
-    const result = await backend.execute([{ type: "resize", width: 500 } as any], {
+    const result = await backend.execute([{ type: "resize", width: 500 } as unknown], {
       input: "test.jpg",
       mediaType: "image",
       operations: [],
@@ -53,7 +53,7 @@ describe("WasmVipsBackend", () => {
 
   it("should handle composite operation", async () => {
     const result = await backend.execute(
-      [{ type: "composite", overlay: "logo.png", x: 10, y: 10 } as any],
+      [{ type: "composite", overlay: "logo.png", x: 10, y: 10 } as unknown],
       {
         input: "test.jpg",
         mediaType: "image",

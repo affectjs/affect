@@ -28,7 +28,7 @@ describe("FFmpegWasmBackend", () => {
   });
 
   it("should initialize and execute ffmpeg command", async () => {
-    const result = await backend.execute([{ type: "trim", start: 0, duration: 5 } as any], {
+    const result = await backend.execute([{ type: "trim", start: 0, duration: 5 } as unknown], {
       input: "input.mp4",
       mediaType: "video",
       operations: [],

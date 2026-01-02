@@ -1,6 +1,6 @@
 import Ffmpeg from "../src/index";
 
-var aliases = {
+const aliases = {
   audio: {
     withNoAudio: ["noAudio"],
     withAudioCodec: ["audioCodec"],
@@ -115,7 +115,7 @@ describe("Method aliases", function () {
         describe("FfmpegCommand#" + method, function () {
           aliases[category][method].forEach(function (alias) {
             it("should have a '" + alias + "' alias", function () {
-              var ff = new Ffmpeg();
+              const ff = new Ffmpeg();
 
               expect(typeof ff[method]).toBe("function");
               expect(ff[method]).toBe(ff[alias]);

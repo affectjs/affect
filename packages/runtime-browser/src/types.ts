@@ -10,7 +10,7 @@ export type {
 export interface ExecutionContext {
   input: string; // Identifier
   mediaType: "video" | "audio" | "image";
-  operations: any[];
+  operations: unknown[];
   onProgress?: (progress: number) => void;
   onLog?: (message: string) => void;
 }
@@ -19,6 +19,6 @@ export interface Backend {
   name: string;
   supportedTypes: readonly string[];
   initialize(): Promise<void>;
-  execute(operation: any, context: ExecutionContext): Promise<any>;
+  execute(operation: unknown, context: ExecutionContext): Promise<unknown>;
   dispose(): Promise<void>;
 }

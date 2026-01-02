@@ -12,11 +12,10 @@ declare module "../src/index" {
     _test_getArgs(callback: (args: string[], err?: Error) => void): void;
     _test_getSizeFilters(): string[];
     _getArguments(): string[];
-    _currentOutput: any;
+    _currentOutput: unknown;
   }
 }
 
-// @ts-ignore
 Ffmpeg.prototype._test_getArgs = function (callback: (args: string[], err?: Error) => void) {
   let args: string[];
 
@@ -51,10 +50,10 @@ describe("Command", function () {
     testfilewide = path.join(__dirname, "assets", "testvideo-169.avi");
 
     return new Promise<void>((resolve, reject) => {
-      exec(testhelper.getFfmpegCheck(), function (err: any) {
+      exec(testhelper.getFfmpegCheck(), function (err: unknown) {
         if (!err) {
           // check if file exists
-          fs.exists(testfile, function (exists: any) {
+          fs.exists(testfile, function (exists: unknown) {
             if (exists) {
               resolve();
             } else {
@@ -80,7 +79,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .usingPreset("podcast")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -101,7 +100,7 @@ describe("Command", function () {
           preset: path.join(__dirname, "assets", "presets"),
         })
           .usingPreset("custompreset.cjs")
-          ._test_getArgs(function (args: any) {
+          ._test_getArgs(function (args: unknown) {
             try {
               expect(args.length).toBe(42);
               resolve();
@@ -114,9 +113,9 @@ describe("Command", function () {
 
     it("should allow using functions as presets", function () {
       return new Promise<void>((resolve, reject) => {
-        let presetArg: any;
+        let presetArg: unknown;
 
-        function presetFunc(command: any) {
+        function presetFunc(command: unknown) {
           presetArg = command;
           command.withVideoCodec("libx264");
           command.withAudioFrequency(22050);
@@ -124,7 +123,7 @@ describe("Command", function () {
 
         const cmd = new Ffmpeg({ source: testfile, logger: testhelper.logger });
 
-        cmd.usingPreset(presetFunc)._test_getArgs(function (args: any, err: any) {
+        cmd.usingPreset(presetFunc)._test_getArgs(function (args: unknown, err: unknown) {
           testhelper.logArgError(err);
           try {
             expect(err).toBeFalsy();
@@ -160,7 +159,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withNoVideo()
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -178,7 +177,7 @@ describe("Command", function () {
           .withSize("320x?")
           .withNoVideo()
           .withAudioBitrate("256k")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -199,7 +198,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withNoAudio()
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -217,7 +216,7 @@ describe("Command", function () {
           .withAudioChannels(2)
           .withNoAudio()
           .withSize("320x?")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -238,7 +237,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withVideoBitrate("256k")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -254,7 +253,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withVideoBitrate("256k", true)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -275,8 +274,8 @@ describe("Command", function () {
     it("should allow image2 multi-file input format", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: "image-%05d.png", logger: testhelper.logger })._test_getArgs(function (
-          args: any,
-          err: any
+          args: unknown,
+          err: unknown
         ) {
           testhelper.logArgError(err);
           try {
@@ -297,7 +296,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withFps(27.77)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -317,7 +316,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withInputFPS(27.77)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -337,7 +336,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .native()
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -356,7 +355,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .addInput("soundtrack.mp3")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -414,7 +413,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withVideoCodec("libx264")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -436,7 +435,7 @@ describe("Command", function () {
           .withVideoFilter("scale=123:456")
           .withVideoFilter("pad=1230:4560:100:100:yellow")
           .withVideoFilter("multiple=1", "filters=2")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -456,7 +455,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withVideoFilter(["multiple=1", "filters=2"])
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -490,7 +489,7 @@ describe("Command", function () {
               },
             }
           )
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -512,7 +511,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioBitrate(256)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -531,8 +530,8 @@ describe("Command", function () {
     it("should add the -loop 1 argument", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger }).loop()._test_getArgs(function (
-          args: any,
-          err: any
+          args: unknown,
+          err: unknown
         ) {
           testhelper.logArgError(err);
           try {
@@ -552,7 +551,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .loop(120)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -573,7 +572,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .loop("00:06:46.81")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -597,7 +596,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .takeFrames(250)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -617,7 +616,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioCodec("mp3")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -639,7 +638,7 @@ describe("Command", function () {
           .withAudioFilter("silencedetect=n=-50dB:d=5")
           .withAudioFilter("volume=0.5")
           .withAudioFilter("multiple=1", "filters=2")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -657,7 +656,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioFilter(["multiple=1", "filters=2"])
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -691,7 +690,7 @@ describe("Command", function () {
               },
             }
           )
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -713,7 +712,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioChannels(1)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -733,7 +732,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioFrequency(22500)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -753,7 +752,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .withAudioQuality(5)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -773,7 +772,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .setStartTime("00:00:10")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -793,7 +792,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .setDuration(10)
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -813,7 +812,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .addOption("-ab", "256k")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -839,7 +838,7 @@ describe("Command", function () {
           ])
           .addOptions("-single option")
           .addOptions("-multiple", "-options")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -864,11 +863,11 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .addInputOption("-r", "29.97")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
-              var joined = args.join(" ");
+              const joined = args.join(" ");
               expect(joined).toContain("-r 29.97");
               resolve();
             } catch (e) {
@@ -883,11 +882,11 @@ describe("Command", function () {
           .addInputOptions(["-r 29.97", "-f ogg"])
           .addInputOptions("-single option")
           .addInputOptions("-multiple", "-options")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
-              var joined = args.join(" ");
+              const joined = args.join(" ");
               expect(joined).toContain("-r 29.97");
               expect(joined).toContain("-f ogg");
               expect(joined).toContain("-single option");
@@ -907,7 +906,7 @@ describe("Command", function () {
       return new Promise<void>((resolve, reject) => {
         new Ffmpeg({ source: testfile, logger: testhelper.logger })
           .toFormat("mp4")
-          ._test_getArgs(function (args: any, err: any) {
+          ._test_getArgs(function (args: unknown, err: unknown) {
             testhelper.logArgError(err);
             try {
               expect(err).toBeFalsy();
@@ -930,7 +929,7 @@ describe("Command", function () {
     });
 
     it("Should add scale and setsar filters when keepPixelAspect was called", function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .keepPixelAspect(true)
@@ -965,7 +964,7 @@ describe("Command", function () {
     });
 
     it("Should add proper scale filter when withSize was called with a percent value", function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("42%")
@@ -989,7 +988,7 @@ describe("Command", function () {
     });
 
     it("Should add proper scale filter when withSize was called with a fixed size", function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x200")
@@ -1006,7 +1005,7 @@ describe("Command", function () {
     });
 
     it('Should add proper scale filter when withSize was called with a "?" and no aspect ratio is specified', function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x?")
@@ -1036,7 +1035,7 @@ describe("Command", function () {
     });
 
     it('Should add proper scale filter when withSize was called with a "?" and an aspect ratio is specified', function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x?")
@@ -1054,7 +1053,7 @@ describe("Command", function () {
     });
 
     it('Should add scale and pad filters when withSize was called with a "?", aspect ratio and auto padding are specified', function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x?")
@@ -1084,7 +1083,7 @@ describe("Command", function () {
     });
 
     it("Should add scale and pad filters when withSize was called with a fixed size and auto padding is specified", function () {
-      var filters;
+      let filters;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x200")
@@ -1138,8 +1137,8 @@ describe("Command", function () {
     });
 
     it("Should round sizes to multiples of 2", function () {
-      var filters;
-      var aspect = 102 / 202;
+      let filters;
+      const aspect = 102 / 202;
 
       filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("101x201")
@@ -1183,7 +1182,7 @@ describe("Command", function () {
     });
 
     it("Should apply autopadding when no boolean argument was passed to applyAutopadding", function () {
-      var filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
+      const filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x?")
         .withAspect(0.5)
         .applyAutopadding("white")
@@ -1195,7 +1194,7 @@ describe("Command", function () {
     });
 
     it("Should default to black padding", function () {
-      var filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
+      let filters = new Ffmpeg({ source: testfile, logger: testhelper.logger })
         .withSize("100x?")
         .withAspect(0.5)
         .applyAutopadding()
@@ -1219,7 +1218,7 @@ describe("Command", function () {
 
   describe("complexFilter", function () {
     it("should generate a complex filter from a single filter", function () {
-      var filters = new Ffmpeg().complexFilter("filterstring")._getArguments();
+      const filters = new Ffmpeg().complexFilter("filterstring")._getArguments();
 
       expect(filters.length).toBe(2);
       expect(filters[0]).toBe("-filter_complex");
@@ -1227,21 +1226,23 @@ describe("Command", function () {
     });
 
     it("should generate a complex filter from a filter array", function () {
-      var filters = new Ffmpeg().complexFilter(["filter1", "filter2"])._getArguments();
+      const filters = new Ffmpeg().complexFilter(["filter1", "filter2"])._getArguments();
 
       expect(filters.length).toBe(2);
       expect(filters[1]).toBe("filter1;filter2");
     });
 
     it("should support filter objects", function () {
-      var filters = new Ffmpeg().complexFilter(["filter1", { filter: "filter2" }])._getArguments();
+      const filters = new Ffmpeg()
+        .complexFilter(["filter1", { filter: "filter2" }])
+        ._getArguments();
 
       expect(filters.length).toBe(2);
       expect(filters[1]).toBe("filter1;filter2");
     });
 
     it("should support filter options", function () {
-      var filters = new Ffmpeg()
+      const filters = new Ffmpeg()
         .complexFilter([
           { filter: "filter1", options: "optionstring" },
           { filter: "filter2", options: ["opt1", "opt2", "opt3"] },
@@ -1256,7 +1257,7 @@ describe("Command", function () {
     });
 
     it("should escape filter options with ambiguous characters", function () {
-      var filters = new Ffmpeg()
+      const filters = new Ffmpeg()
         .complexFilter([
           { filter: "filter1", options: "optionstring" },
           { filter: "filter2", options: ["op,t1", "op,t2", "op,t3"] },
@@ -1271,7 +1272,7 @@ describe("Command", function () {
     });
 
     it("should support filter input streams", function () {
-      var filters = new Ffmpeg()
+      const filters = new Ffmpeg()
         .complexFilter([
           { filter: "filter1", inputs: "input" },
           { filter: "filter2", inputs: "[input]" },
@@ -1284,7 +1285,7 @@ describe("Command", function () {
     });
 
     it("should support filter output streams", function () {
-      var filters = new Ffmpeg()
+      const filters = new Ffmpeg()
         .complexFilter([
           { filter: "filter1", options: "opt", outputs: "output" },
           { filter: "filter2", options: "opt", outputs: "[output]" },
@@ -1299,7 +1300,7 @@ describe("Command", function () {
     });
 
     it("should support an additional mapping argument", function () {
-      var filters = new Ffmpeg().complexFilter(["filter1", "filter2"], "output")._getArguments();
+      let filters = new Ffmpeg().complexFilter(["filter1", "filter2"], "output")._getArguments();
 
       expect(filters.length).toBe(4);
       expect(filters[2]).toBe("-map");
@@ -1323,7 +1324,7 @@ describe("Command", function () {
     });
 
     it("should override any previously set complex filtergraphs", function () {
-      var filters = new Ffmpeg()
+      const filters = new Ffmpeg()
         .complexFilter(["filter1a", "filter1b"], "output1")
         .complexFilter(["filter2a", "filter2b"], "output2")
         ._getArguments();
@@ -1337,8 +1338,8 @@ describe("Command", function () {
 
   describe("clone", function () {
     it("should return a new FfmpegCommand instance", function () {
-      var command = new Ffmpeg({ source: testfile, logger: testhelper.logger });
-      var clone = command.clone();
+      const command = new Ffmpeg({ source: testfile, logger: testhelper.logger });
+      const clone = command.clone();
 
       expect(clone).toBeInstanceOf(Ffmpeg);
       expect(clone).not.toBe(command);
@@ -1346,17 +1347,17 @@ describe("Command", function () {
 
     it("should duplicate FfmpegCommand options at the time of the call", function () {
       return new Promise<void>((resolve, reject) => {
-        var command = new Ffmpeg({ source: testfile, logger: testhelper.logger }).preset(
+        const command = new Ffmpeg({ source: testfile, logger: testhelper.logger }).preset(
           "flashvideo"
         );
 
-        var clone = command.clone();
+        const clone = command.clone();
 
-        command._test_getArgs(function (originalArgs: any) {
-          clone._test_getArgs(function (cloneArgs: any) {
+        command._test_getArgs(function (originalArgs: unknown) {
+          clone._test_getArgs(function (cloneArgs: unknown) {
             try {
               expect(cloneArgs.length).toBe(originalArgs.length);
-              originalArgs.forEach(function (arg: any, index: any) {
+              originalArgs.forEach(function (arg: unknown, index: unknown) {
                 expect(cloneArgs[index]).toBe(arg);
               });
               resolve();
@@ -1370,14 +1371,14 @@ describe("Command", function () {
 
     it("should have separate argument lists", function () {
       return new Promise<void>((resolve, reject) => {
-        var command = new Ffmpeg({ source: testfile, logger: testhelper.logger }).preset(
+        const command = new Ffmpeg({ source: testfile, logger: testhelper.logger }).preset(
           "flashvideo"
         );
 
-        var clone = command.clone().audioFrequency(22050);
+        const clone = command.clone().audioFrequency(22050);
 
-        command._test_getArgs(function (originalArgs: any) {
-          clone._test_getArgs(function (cloneArgs: any) {
+        command._test_getArgs(function (originalArgs: unknown) {
+          clone._test_getArgs(function (cloneArgs: unknown) {
             try {
               expect(cloneArgs.length).toBe(originalArgs.length + 2);
               resolve();

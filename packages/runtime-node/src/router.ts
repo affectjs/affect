@@ -6,7 +6,7 @@
 
 import { extname } from "path";
 import type { MediaType, Operation, Backend } from "./types";
-import { fluentFfmpegBackend } from "./backends/fluent-ffmpeg";
+import { fluentFfmpegBackend } from "./backends/ffmpeg";
 import { sharpBackend } from "./backends/sharp";
 
 /**

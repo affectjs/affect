@@ -70,7 +70,7 @@ describe("Assets Files Testing", () => {
         expect(ast.mediaType).toBe("audio");
 
         // 验证包含 encode 命令
-        const encodeCmd = ast.commands.find((cmd: any) => cmd.type === "Encode");
+        const encodeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Encode");
         expect(encodeCmd).toBeDefined();
         if (encodeCmd) {
           expect(encodeCmd.codec).toBe("mp3");
@@ -78,7 +78,7 @@ describe("Assets Files Testing", () => {
         }
 
         // 验证包含 audio block
-        const audioBlock = ast.commands.find((cmd: any) => cmd.type === "AudioBlock");
+        const audioBlock = ast.commands.find((cmd: unknown) => cmd.type === "AudioBlock");
         expect(audioBlock).toBeDefined();
       }
     });
@@ -92,7 +92,7 @@ describe("Assets Files Testing", () => {
         expect(ast.mediaType).toBe("video");
 
         // 验证包含 resize 命令
-        const resizeCmd = ast.commands.find((cmd: any) => cmd.type === "Resize");
+        const resizeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Resize");
         expect(resizeCmd).toBeDefined();
         if (resizeCmd) {
           expect(resizeCmd.width).toBe(1280);
@@ -100,7 +100,7 @@ describe("Assets Files Testing", () => {
         }
 
         // 验证包含 encode 命令
-        const encodeCmd = ast.commands.find((cmd: any) => cmd.type === "Encode");
+        const encodeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Encode");
         expect(encodeCmd).toBeDefined();
         if (encodeCmd) {
           expect(encodeCmd.codec).toBe("h264");
@@ -118,7 +118,7 @@ describe("Assets Files Testing", () => {
         expect(ast.mediaType).toBe("image");
 
         // 验证包含 resize 命令
-        const resizeCmd = ast.commands.find((cmd: any) => cmd.type === "Resize");
+        const resizeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Resize");
         expect(resizeCmd).toBeDefined();
         if (resizeCmd) {
           expect(resizeCmd.width).toBe(1920);
@@ -126,7 +126,7 @@ describe("Assets Files Testing", () => {
         }
 
         // 验证包含 filter 命令
-        const filterCmd = ast.commands.find((cmd: any) => cmd.type === "Filter");
+        const filterCmd = ast.commands.find((cmd: unknown) => cmd.type === "Filter");
         expect(filterCmd).toBeDefined();
         if (filterCmd) {
           expect(filterCmd.name).toBe("grayscale");
@@ -143,7 +143,7 @@ describe("Assets Files Testing", () => {
         expect(ast.mediaType).toBe("auto");
 
         // 验证使用变量
-        const inputCmd = ast.commands.find((cmd: any) => cmd.type === "Input");
+        const inputCmd = ast.commands.find((cmd: unknown) => cmd.type === "Input");
         expect(inputCmd).toBeDefined();
         if (inputCmd && inputCmd.path) {
           expect(inputCmd.path.type).toBe("Variable");
@@ -152,7 +152,7 @@ describe("Assets Files Testing", () => {
           }
         }
 
-        const saveCmd = ast.commands.find((cmd: any) => cmd.type === "Save");
+        const saveCmd = ast.commands.find((cmd: unknown) => cmd.type === "Save");
         expect(saveCmd).toBeDefined();
         if (saveCmd && saveCmd.path) {
           expect(saveCmd.path.type).toBe("Variable");
@@ -172,7 +172,7 @@ describe("Assets Files Testing", () => {
         expect(ast.mediaType).toBe("video");
 
         // 验证使用变量
-        const inputCmd = ast.commands.find((cmd: any) => cmd.type === "Input");
+        const inputCmd = ast.commands.find((cmd: unknown) => cmd.type === "Input");
         if (inputCmd && inputCmd.path) {
           expect(inputCmd.path.type).toBe("Variable");
           if (inputCmd.path.type === "Variable") {
@@ -181,13 +181,13 @@ describe("Assets Files Testing", () => {
         }
 
         // 验证包含 resize 和 encode
-        const resizeCmd = ast.commands.find((cmd: any) => cmd.type === "Resize");
+        const resizeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Resize");
         expect(resizeCmd).toBeDefined();
         if (resizeCmd) {
           expect(resizeCmd.width).toBe(1920);
         }
 
-        const encodeCmd = ast.commands.find((cmd: any) => cmd.type === "Encode");
+        const encodeCmd = ast.commands.find((cmd: unknown) => cmd.type === "Encode");
         expect(encodeCmd).toBeDefined();
         if (encodeCmd) {
           expect(encodeCmd.codec).toBe("h264");
@@ -217,7 +217,7 @@ describe("Assets Files Testing", () => {
       if (ast.type === "AffectBlock") {
         // 应该只有 Input 和 Save 命令
         const operations = ast.commands.filter(
-          (cmd: any) => cmd.type !== "Input" && cmd.type !== "Save"
+          (cmd: unknown) => cmd.type !== "Input" && cmd.type !== "Save"
         );
         expect(operations.length).toBe(0);
       }

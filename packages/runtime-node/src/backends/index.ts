@@ -4,6 +4,6 @@
  * Export all backend adapters
  */
 
-export { fluentFfmpegBackend } from "./fluent-ffmpeg";
+export { fluentFfmpegBackend } from "./ffmpeg";
 export { sharpBackend } from "./sharp";
 

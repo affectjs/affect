@@ -1,99 +1,69 @@
-/*jshint node:true*/
+/*jshint node:true, laxcomma:true*/
 import utils from "../utils";
+import type { FfmpegCommand, FilterSpec } from "../utils";
 
-
-/*
- *! Output-related methods
+/**
+ * Output-related methods
+ *
+ * @param {Object} proto prototype to extend
  */
-
-import type { FfmpegCommand } from "../utils";
-export default function(proto: FfmpegCommand) {
+export default function (proto: FfmpegCommand) {
   /**
-   * Add output
+   * Add an output to the command
    *
-   * @method FfmpegCommand#output
+   * @method FfmpegCommand#addOutput
    * @category Output
-   * @aliases addOutput
+   * @aliases output
    *
-   * @param {String|Writable} target target file path or writable stream
-   * @param {Object} [pipeopts={}] pipe options (only applies to streams)
+   * @param {String|Writable} target output file path or writable stream
+   * @param {Object} [pipeopts] pipe options
    * @return FfmpegCommand
    */
-  proto.addOutput =
-  proto.output = function(target, pipeopts) {
-    var isFile = false;
+  proto.addOutput = proto.output = function (target: string | unknown, pipeopts?: unknown) {
+    let isFile = false;
 
-    if (!target && this._currentOutput) {
-      // No target is only allowed when called from constructor
-      throw new Error('Invalid output');
+    if (typeof target === "string" && !target.match(/^https?:\/\//) && !target.match(/^pipe:/)) {
+      isFile = true;
     }
 
-    if (target && typeof target !== 'string') {
-      if (!('writable' in target) || !(target.writable)) {
-        throw new Error('Invalid output');
-      }
-    } else if (typeof target === 'string') {
-      var protocol = target.match(/^([a-z]{2,}):/i);
-      isFile = !protocol || protocol[0] === 'file';
-    }
+    this._outputs.push({
+      target: target,
+      pipeopts: pipeopts,
+      isFile: isFile,
+      options: utils.args(),
+      audio: utils.args(),
+      video: utils.args(),
+      audioFilters: utils.args(),
+      videoFilters: utils.args(),
+      sizeFilters: utils.args(),
+      flags: {},
+    });
 
-    if (target && !('target' in this._currentOutput)) {
-      // For backwards compatibility, set target for first output
-      this._currentOutput.target = target;
-      this._currentOutput.isFile = isFile;
-      this._currentOutput.pipeopts = pipeopts || {};
-    } else {
-      if (target && typeof target !== 'string') {
-        var hasOutputStream = this._outputs.some(function(output) {
-          return typeof output.target !== 'string';
-        });
-
-        if (hasOutputStream) {
-          throw new Error('Only one output stream is supported');
-        }
-      }
-
-      this._outputs.push(this._currentOutput = {
-        target: target,
-        isFile: isFile,
-        flags: {},
-        pipeopts: pipeopts || {}
-      });
-
-      var self = this;
-      ['audio', 'audioFilters', 'video', 'videoFilters', 'sizeFilters', 'options'].forEach(function(key) {
-        self._currentOutput[key] = utils.args();
-      });
-
-      if (!target) {
-        // Call from constructor: remove target key
-        delete this._currentOutput.target;
-      }
-    }
+    this._currentOutput = this._outputs[this._outputs.length - 1];
 
     return this;
   };
 
-
   /**
-   * Specify output seek time
+   * Specify output format
    *
-   * @method FfmpegCommand#seek
-   * @category Input
-   * @aliases seekOutput
+   * @method FfmpegCommand#format
+   * @category Output
+   * @aliases withOutputFormat,toFormat
    *
-   * @param {String|Number} seek seek time in seconds or as a '[hh:[mm:]]ss[.xxx]' string
+   * @param {String} format output format
    * @return FfmpegCommand
    */
-  proto.seekOutput =
-  proto.seek = function(seek) {
-    this._currentOutput.options('-ss', seek);
-    return this;
-  };
-
+  proto.withOutputFormat =
+    proto.toFormat =
+    proto.format =
+      function (format: string) {
+        this._currentOutput.options("-f", format);
+        return this;
+      };
 
   /**
-   * Set output duration
+   * Specify output duration
    *
    * @method FfmpegCommand#duration
    * @category Output
@@ -103,49 +73,285 @@ export default function(proto: FfmpegCommand) {
    * @return FfmpegCommand
    */
   proto.withDuration =
-  proto.setDuration =
-  proto.duration = function(duration) {
-    this._currentOutput.options('-t', duration);
-    return this;
-  };
-
+    proto.setDuration =
+    proto.duration =
+      function (duration: string | number) {
+        this._currentOutput.options("-t", duration);
+        return this;
+      };
 
   /**
-   * Set output format
+   * Specify output seek time
    *
-   * @method FfmpegCommand#format
+   * @method FfmpegCommand#seek
    * @category Output
-   * @aliases toFormat,withOutputFormat,outputFormat
+   * @aliases seekOutput
    *
-   * @param {String} format output format name
+   * @param {String|Number} seek seek time in seconds or as a '[[hh:]mm:]ss[.xxx]' string
    * @return FfmpegCommand
    */
-  proto.toFormat =
-  proto.withOutputFormat =
-  proto.outputFormat =
-  proto.format = function(format) {
-    this._currentOutput.options('-f', format);
+  proto.seekOutput = proto.seek = function (seek: string | number) {
+    this._currentOutput.options("-ss", seek);
     return this;
   };
 
-
   /**
-   * Add stream mapping to output
+   * Skip audio transcoding
    *
-   * @method FfmpegCommand#map
-   * @category Output
+   * @method FfmpegCommand#noAudio
+   * @category Audio
+   * @aliases withNoAudio
    *
-   * @param {String} spec stream specification string, with optional square brackets
    * @return FfmpegCommand
    */
-  proto.map = function(spec) {
-    this._currentOutput.options('-map', spec.replace(utils.streamRegexp, '[$1]'));
+  proto.withNoAudio = proto.noAudio = function () {
+    this._currentOutput.audio.clear();
+    this._currentOutput.audioFilters.clear();
+    this._currentOutput.options("-an");
     return this;
   };
 
+  /**
+   * Specify audio codec
+   *
+   * @method FfmpegCommand#audioCodec
+   * @category Audio
+   * @aliases withAudioCodec
+   *
+   * @param {String} codec audio codec name
+   * @return FfmpegCommand
+   */
+  proto.withAudioCodec = proto.audioCodec = function (codec: string) {
+    this._currentOutput.audio("-acodec", codec);
+    return this;
+  };
 
   /**
-   * Run flvtool2/flvmeta on output
+   * Specify audio bitrate
+   *
+   * @method FfmpegCommand#audioBitrate
+   * @category Audio
+   * @aliases withAudioBitrate
+   *
+   * @param {String|Number} bitrate audio bitrate in kbps
+   * @return FfmpegCommand
+   */
+  proto.withAudioBitrate = proto.audioBitrate = function (
+    bitrate: string | number,
+    options?:
+      | boolean
+      | { maxrate?: string | number; minrate?: string | number; bufsize?: string | number }
+  ) {
+    if (typeof bitrate === "number" || (bitrate as any) + "s" !== bitrate) {
+      bitrate = bitrate + "k";
+    }
+    this._currentOutput.audio("-b:a", bitrate as string);
+
+    if (options === true) {
+      this._currentOutput.audio("-maxrate", bitrate as string);
+      this._currentOutput.audio("-minrate", bitrate as string);
+      this._currentOutput.audio("-bufsize", bitrate as string);
+    } else if (options && typeof options === "object") {
+      if (options.maxrate) this._currentOutput.audio("-maxrate", options.maxrate.toString());
+      if (options.minrate) this._currentOutput.audio("-minrate", options.minrate.toString());
+      if (options.bufsize) this._currentOutput.audio("-bufsize", options.bufsize.toString());
+    }
+
+    return this;
+  };
+
+  /**
+   * Specify audio channels
+   *
+   * @method FfmpegCommand#audioChannels
+   * @category Audio
+   * @aliases withAudioChannels
+   *
+   * @param {Number} channels number of audio channels
+   * @return FfmpegCommand
+   */
+  proto.withAudioChannels = proto.audioChannels = function (channels: number) {
+    this._currentOutput.audio("-ac", channels);
+    return this;
+  };
+
+  /**
+   * Specify audio frequency
+   *
+   * @method FfmpegCommand#audioFrequency
+   * @category Audio
+   * @aliases withAudioFrequency
+   *
+   * @param {Number} freq audio frequency in Hz
+   * @return FfmpegCommand
+   */
+  proto.withAudioFrequency = proto.audioFrequency = function (freq: number) {
+    this._currentOutput.audio("-ar", freq);
+    return this;
+  };
+
+  /**
+   * Add audio filter(s)
+   *
+   * @method FfmpegCommand#audioFilters
+   * @category Audio
+   * @aliases withAudioFilter,withAudioFilters,audioFilter
+   *
+   * @param {...(String|Object)} filters filter specification(s)
+   * @return FfmpegCommand
+   */
+  proto.withAudioFilter =
+    proto.withAudioFilters =
+    proto.audioFilter =
+    proto.audioFilters =
+      function (...filters: (string | FilterSpec | (string | FilterSpec)[])[]) {
+        let finalFilters: (string | FilterSpec)[];
+        if (filters.length > 1) {
+          finalFilters = filters as (string | FilterSpec)[];
+        } else {
+          const first = filters[0];
+          finalFilters = Array.isArray(first) ? first : [first as string | FilterSpec];
+        }
+
+        this._currentOutput.audioFilters(...utils.makeFilterStrings(finalFilters));
+        return this;
+      };
+
+  /**
+   * Skip video transcoding
+   *
+   * @method FfmpegCommand#noVideo
+   * @category Video
+   * @aliases withNoVideo
+   *
+   * @return FfmpegCommand
+   */
+  proto.withNoVideo = proto.noVideo = function () {
+    this._currentOutput.video.clear();
+    this._currentOutput.videoFilters.clear();
+    this._currentOutput.options("-vn");
+    return this;
+  };
+
+  /**
+   * Specify video codec
+   *
+   * @method FfmpegCommand#videoCodec
+   * @category Video
+   * @aliases withVideoCodec
+   *
+   * @param {String} codec video codec name
+   * @return FfmpegCommand
+   */
+  proto.withVideoCodec = proto.videoCodec = function (codec: string) {
+    this._currentOutput.video("-vcodec", codec);
+    return this;
+  };
+
+  /**
+   * Specify video bitrate
+   *
+   * @method FfmpegCommand#videoBitrate
+   * @category Video
+   * @aliases withVideoBitrate
+   *
+   * @param {String|Number} bitrate video bitrate in kbps
+   * @return FfmpegCommand
+   */
+  proto.withVideoBitrate = proto.videoBitrate = function (
+    bitrate: string | number,
+    options?:
+      | boolean
+      | { maxrate?: string | number; minrate?: string | number; bufsize?: string | number }
+  ) {
+    if (typeof bitrate === "number" || (bitrate as any) + "s" !== bitrate) {
+      bitrate = bitrate + "k";
+    }
+    this._currentOutput.video("-b:v", bitrate as string);
+
+    if (options === true) {
+      this._currentOutput.video("-maxrate", bitrate as string);
+      this._currentOutput.video("-minrate", bitrate as string);
+      this._currentOutput.video("-bufsize", bitrate as string);
+    } else if (options && typeof options === "object") {
+      if (options.maxrate) this._currentOutput.video("-maxrate", options.maxrate.toString());
+      if (options.minrate) this._currentOutput.video("-minrate", options.minrate.toString());
+      if (options.bufsize) this._currentOutput.video("-bufsize", options.bufsize.toString());
+    }
+
+    return this;
+  };
+
+  /**
+   * Specify video frame rate
+   *
+   * @method FfmpegCommand#fps
+   * @category Video
+   * @aliases withVideoFps,withVideoFPS,withFps,withFPS,videoFPS,videoFps,FPS
+   *
+   * @param {Number} fps video frame rate
+   * @return FfmpegCommand
+   */
+  proto.withVideoFps =
+    proto.withVideoFPS =
+    proto.withFps =
+    proto.withFPS =
+    proto.videoFPS =
+    proto.videoFps =
+    proto.FPS =
+    proto.fps =
+      function (fps: number) {
+        this._currentOutput.video("-r", fps);
+        return this;
+      };
+
+  /**
+   * Add video filter(s)
+   *
+   * @method FfmpegCommand#videoFilters
+   * @category Video
+   * @aliases withVideoFilter,withVideoFilters,videoFilter
+   *
+   * @param {...(String|Object)} filters filter specification(s)
+   * @return FfmpegCommand
+   */
+  proto.withVideoFilter =
+    proto.withVideoFilters =
+    proto.videoFilter =
+    proto.videoFilters =
+      function (...filters: (string | FilterSpec | (string | FilterSpec)[])[]) {
+        let finalFilters: (string | FilterSpec)[];
+        if (filters.length > 1) {
+          finalFilters = filters as (string | FilterSpec)[];
+        } else {
+          const first = filters[0];
+          finalFilters = Array.isArray(first) ? first : [first as string | FilterSpec];
+        }
+
+        this._currentOutput.videoFilters(...utils.makeFilterStrings(finalFilters));
+        return this;
+      };
+
+  /**
+   * Specify the number of video frames to record
+   *
+   * @method FfmpegCommand#frames
+   * @category Video
+   * @aliases takeFrames,withFrames
+   *
+   * @param {Number} frames number of frames
+   * @return FfmpegCommand
+   */
+  proto.takeFrames =
+    proto.withFrames =
+    proto.frames =
+      function (frames: number) {
+        this._currentOutput.video("-vframes", frames);
+        return this;
+      };
+
+  /**
+   * Update flv metadata after transcoding
    *
    * @method FfmpegCommand#flvmeta
    * @category Output
@@ -153,9 +359,8 @@ export default function(proto: FfmpegCommand) {
    *
    * @return FfmpegCommand
    */
-  proto.updateFlvMetadata =
-  proto.flvmeta = function() {
+  proto.updateFlvMetadata = proto.flvmeta = function () {
     this._currentOutput.flags.flvmeta = true;
     return this;
   };
-};
+}

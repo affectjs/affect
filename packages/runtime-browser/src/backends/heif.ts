@@ -42,8 +42,8 @@ export class HeifBackend implements Backend {
       // wasm-heif usually takes a buffer.
       // Since we are in a worker, we should have the data already or read it.
 
-      const data = (this.heif as any).FS.readFile(input);
-      const decoded = (this.heif as any).decode(data, data.length, 3); // 3 channels (RGB)
+      const data = (this.heif as unknown).FS.readFile(input);
+      const decoded = (this.heif as unknown).decode(data, data.length, 3); // 3 channels (RGB)
 
       // decoded contains { dimensions: { width, height }, data: Uint8Array (raw pixels) }
       // For now, we return the raw pixels or encode to something else.
@@ -60,7 +60,7 @@ export class HeifBackend implements Backend {
   async writeFile(name: string, data: Uint8Array): Promise<void> {
     if (!this.ready || !this.heif) await this.initialize();
     if (!this.heif) throw new Error("Heif not initialized");
-    (this.heif as any).FS.writeFile(name, data);
+    (this.heif as unknown).FS.writeFile(name, data);
   }
 
   async dispose(): Promise<void> {
