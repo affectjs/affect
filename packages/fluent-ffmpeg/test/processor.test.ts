@@ -97,7 +97,12 @@ describe("Processor", function () {
               });
             },
             (err) => {
-              if (err) reject(err);
+              if (err)
+                reject(
+                  new Error(
+                    (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+                  )
+                );
               else resolve();
             }
           );
@@ -223,7 +228,11 @@ describe("Processor", function () {
                     expect(parseInt(stdout)).toBe(5);
                     reniced = true;
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               }, 300);
@@ -234,7 +243,9 @@ describe("Processor", function () {
                 expect(reniced).toBe(true);
                 resolve();
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -244,7 +255,9 @@ describe("Processor", function () {
               expect(startCalled).toBe(true);
               resolve(); // It might error out due to timeout or whatever, but we checked renice
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function () {
@@ -264,7 +277,11 @@ describe("Processor", function () {
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
             expect(err).toBeFalsy();
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             resolve();
@@ -291,7 +308,9 @@ describe("Processor", function () {
               expect(err.message).toContain("timeout");
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function () {
@@ -355,7 +374,11 @@ describe("Processor", function () {
                   expect(errorCalled).toBe(true);
                   resolve();
                 } catch (e) {
-                  reject(e);
+                  reject(
+                    new Error(
+                      (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                    )
+                  );
                 }
               }, 1000);
             });
@@ -366,7 +389,9 @@ describe("Processor", function () {
               expect(startCalled).toBe(true);
               errorCalled = true;
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function () {
@@ -404,7 +429,9 @@ describe("Processor", function () {
                 expect(errorCalled).toBe(true);
                 resolve();
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -415,7 +442,9 @@ describe("Processor", function () {
               errorCalled = true;
               ffmpegJob.kill("SIGCONT");
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function () {
@@ -440,13 +469,19 @@ describe("Processor", function () {
               expect(data).toHaveProperty("audio");
               expect(data).toHaveProperty("video");
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             resolve();
@@ -468,13 +503,19 @@ describe("Processor", function () {
               expect(data).toHaveProperty("audio");
               expect(data).toHaveProperty("video");
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             resolve();
@@ -498,12 +539,18 @@ describe("Processor", function () {
               expect(data1).toHaveProperty("audio");
               expect(data2).toHaveProperty("audio");
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             resolve();
@@ -528,14 +575,20 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             try {
               expect(gotProgress).toBe(true);
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .saveToFile(testFile);
@@ -561,20 +614,28 @@ describe("Processor", function () {
               expect(cmdline).toContain("testvideo-5m");
               expect(cmdline).toContain("-b:a 128k");
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             try {
               expect(startCalled).toBe(true);
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .saveToFile(testFile);
@@ -597,7 +658,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             try {
@@ -605,7 +670,9 @@ describe("Processor", function () {
               expect(lines[0]).toMatch(new RegExp("^" + "ffmpeg version".replace(/['"]/g, "")));
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .saveToFile(testFile);
@@ -626,7 +693,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             // We can't easily check internal buffer size, but we can check usage if available exposed
@@ -652,7 +723,11 @@ describe("Processor", function () {
           getCommand({ source: testfile, logger: testhelper.logger })
             .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
               testhelper.logError(err, stdout, stderr);
-              reject(err);
+              reject(
+                new Error(
+                  (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+                )
+              );
             })
             .on("filenames", function (filenames) {
               filenamesCalled = true;
@@ -662,20 +737,28 @@ describe("Processor", function () {
                   expect(file).toBe(files[index]);
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             })
             .on("end", function () {
               try {
                 expect(filenamesCalled).toBe(true);
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
                 return;
               }
 
               fs.readdir(testFolder, function (err, content) {
                 if (err) {
-                  reject(err);
+                  reject(
+                    new Error(
+                      (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+                    )
+                  );
                   return;
                 }
                 let tnCount = 0;
@@ -691,7 +774,11 @@ describe("Processor", function () {
                   });
                   resolve();
                 } catch (e) {
-                  reject(e);
+                  reject(
+                    new Error(
+                      (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                    )
+                  );
                 }
               });
             })
@@ -816,7 +903,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             fs.exists(testFile, function (exist) {
@@ -825,7 +916,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -834,11 +931,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -855,7 +958,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             resolve();
@@ -873,7 +980,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             fs.exists(testFile, function (exist) {
@@ -882,7 +993,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -891,11 +1008,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -913,7 +1036,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             fs.exists(testFile, function (exist) {
@@ -922,7 +1049,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -931,11 +1064,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -968,7 +1107,11 @@ describe("Processor", function () {
                   expect(exists).toBe(false);
                   resolve();
                 } catch (e) {
-                  reject(e);
+                  reject(
+                    new Error(
+                      (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                    )
+                  );
                 }
               });
             });
@@ -981,7 +1124,9 @@ describe("Processor", function () {
               assert.strictEqual(err.inputStreamError, readError);
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function (stdout: unknown, stderr: unknown) {
@@ -1002,7 +1147,11 @@ describe("Processor", function () {
         getCommand({ source: testfileaudio1, logger: testhelper.logger })
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             fs.exists(testFile, function (exist) {
@@ -1011,7 +1160,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -1020,11 +1175,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -1046,7 +1207,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function (stdout: unknown, stderr: unknown) {
             fs.exists(testFile, function (exist) {
@@ -1059,7 +1224,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -1068,11 +1239,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -1092,7 +1269,11 @@ describe("Processor", function () {
           .usingPreset("divx")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function (stdout: unknown, stderr: unknown) {
             fs.exists(testFile, function (exist) {
@@ -1105,7 +1286,13 @@ describe("Processor", function () {
                 // check filesize to make sure conversion actually worked
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {
@@ -1114,11 +1301,17 @@ describe("Processor", function () {
                     expect(stats.isFile()).toBe(true);
                     resolve();
                   } catch (e) {
-                    reject(e);
+                    reject(
+                      new Error(
+                        (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                      )
+                    );
                   }
                 });
               } catch (e) {
-                reject(e);
+                reject(
+                  new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+                );
               }
             });
           })
@@ -1142,7 +1335,11 @@ describe("Processor", function () {
             .usingPreset("divx")
             .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
               testhelper.logError(err, stdout, stderr);
-              reject(err);
+              reject(
+                new Error(
+                  (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+                )
+              );
             })
             .on("end", function (stdout: unknown, stderr: unknown) {
               fs.exists(testFile, function (exist) {
@@ -1150,7 +1347,13 @@ describe("Processor", function () {
                   expect(exist).toBe(true);
                   fs.stat(testFile, function (err, stats) {
                     if (err) {
-                      reject(err);
+                      reject(
+                        new Error(
+                          (err as any).message || (err as any).pid
+                            ? "ChildProcess Error"
+                            : String(err)
+                        )
+                      );
                       return;
                     }
                     try {
@@ -1159,11 +1362,19 @@ describe("Processor", function () {
                       expect(stats.isFile()).toBe(true);
                       resolve();
                     } catch (e) {
-                      reject(e);
+                      reject(
+                        new Error(
+                          (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                        )
+                      );
                     }
                   });
                 } catch (e) {
-                  reject(e);
+                  reject(
+                    new Error(
+                      (e as any).message || (e as any).pid ? "ChildProcess Error" : String(e)
+                    )
+                  );
                 }
               });
             });
@@ -1205,7 +1416,9 @@ describe("Processor", function () {
               assert.strictEqual(err.outputStreamError, writeError);
               resolve();
             } catch (e) {
-              reject(e);
+              reject(
+                new Error((e as any).message || (e as any).pid ? "ChildProcess Error" : String(e))
+              );
             }
           })
           .on("end", function (stdout: unknown, stderr: unknown) {
@@ -1240,7 +1453,11 @@ describe("Processor", function () {
           .withVideoCodec("libx264")
           .on("error", function (err: unknown, stdout: unknown, stderr: unknown) {
             testhelper.logError(err, stdout, stderr);
-            reject(err);
+            reject(
+              new Error(
+                (err as any).message || (err as any).pid ? "ChildProcess Error" : String(err)
+              )
+            );
           })
           .on("end", function () {
             async.map(
@@ -1303,7 +1520,13 @@ describe("Processor", function () {
                 expect(exist).toBe(true);
                 fs.stat(testFile, function (err, stats) {
                   if (err) {
-                    reject(err);
+                    reject(
+                      new Error(
+                        (err as any).message || (err as any).pid
+                          ? "ChildProcess Error"
+                          : String(err)
+                      )
+                    );
                     return;
                   }
                   try {

@@ -496,7 +496,7 @@ export default function (proto: Record<string, unknown>) {
 
               this.output(path.join(String(finalConfig.folder), filenamesList[i]))
                 .frames(1)
-                .map(stream);
+                .outputOptions("-map", `[${stream}]`);
 
               if (i > 0) {
                 this.seek((timemarks[i] as number) - firstMark);

@@ -238,35 +238,62 @@ const utils = {
 
   linesRing: function (maxLines: number): Ring {
     const lines: string[] = [];
+    let partialLine = "";
     let cb: ((line: string) => void) | null = null;
+    let closed = false;
 
     return {
       append: function (str: string | Buffer) {
         const data = str.toString();
-        const split = data.split(nlRegexp);
-
-        split.forEach((line) => {
-          if (line.length) {
+        const fullData = partialLine + data;
+        const split = fullData.split(nlRegexp);
+        
+        // 保存最后一部分（可能是不完整的行）
+        partialLine = split[split.length - 1] || "";
+        
+        // 处理完整的行（split.length - 1 个完整行）
+        for (let i = 0; i < split.length - 1; i++) {
+          const line = split[i];
+          // 只处理非空行
+          if (line.length > 0) {
             lines.push(line);
-            if (cb) cb(line);
+            if (cb && !closed) cb(line);
           }
-        });
+        }
 
-        while (lines.length > maxLines) {
-          lines.shift();
+        // 限制行数（在添加后限制，包括 partialLine）
+        if (maxLines > 0) {
+          // 计算总行数（包括 partialLine）
+          const totalLines = lines.length + (partialLine ? 1 : 0);
+          if (totalLines > maxLines) {
+            const toRemove = totalLines - maxLines;
+            // 从开头移除多余的行
+            lines.splice(0, toRemove);
+          }
         }
       },
 
       get: function () {
-        return lines.join("\n");
+        const allLines = [...lines];
+        if (partialLine) {
+          allLines.push(partialLine);
+        }
+        return allLines.join("\n");
       },
 
       close: function () {
-        // No-op
+        if (closed) return;
+        if (partialLine) {
+          lines.push(partialLine);
+          if (cb) cb(partialLine);
+          partialLine = "";
+        }
+        closed = true;
       },
 
       callback: function (callback: (line: string) => void) {
         cb = callback;
+        // 为已存在的行调用回调
         lines.forEach((line) => {
           if (cb) cb(line);
         });
@@ -423,8 +450,24 @@ const utils = {
     collector.clear = () => {
       args.length = 0;
     };
+    collector.find = (searchArg: string, count?: number): string[] | undefined => {
+      const index = args.indexOf(searchArg);
+      if (index === -1) return undefined;
+      const result: string[] = [];
+      const numParams = count || 0;
+      for (let i = 0; i < numParams && index + 1 + i < args.length; i++) {
+        result.push(args[index + 1 + i]);
+      }
+      return result;
+    };
+    collector.remove = (searchArg: string, count?: number) => {
+      const index = args.indexOf(searchArg);
+      if (index === -1) return;
+      const numParams = count || 0;
+      args.splice(index, 1 + numParams);
+    };
     collector.clone = () => {
-      const c = (this as any).args();
+      const c = (this as unknown as { args: () => OptionCollector }).args();
       c(args);
       return c;
     };
@@ -432,7 +475,8 @@ const utils = {
   },
 
   which: function (name: string, callback: (err: Error | null, path?: string) => void) {
-    which(name, (err, result) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (which as any)(name, (err: Error | null, result: string | undefined) => {
       callback(err, result || undefined);
     });
   },
@@ -441,6 +485,29 @@ const utils = {
     Object.keys(src).forEach((key) => {
       dest[key] = src[key];
     });
+  },
+
+  timemarkToSeconds: function (timemark: string | number): number {
+    if (typeof timemark === "number") return timemark;
+    if (timemark.indexOf(":") === -1 && timemark.indexOf(".") >= 0) return Number(timemark);
+
+    const parts = timemark.split(":");
+    let seconds = 0;
+
+    // hh:mm:ss.m
+    if (parts.length === 3) {
+      seconds += parseInt(parts[0], 10) * 3600;
+      seconds += parseInt(parts[1], 10) * 60;
+      seconds += parseFloat(parts[2]);
+    }
+
+    // mm:ss.m
+    else if (parts.length === 2) {
+      seconds += parseInt(parts[0], 10) * 60;
+      seconds += parseFloat(parts[1]);
+    }
+
+    return seconds;
   },
 };
 

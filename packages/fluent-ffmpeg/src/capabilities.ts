@@ -72,8 +72,9 @@ export default function (proto: Record<string, unknown>) {
 
     this._spawnFfmpeg(
       ["-version"],
-      { captureStdout: true, stdoutLines: 10 },
-      (err: Error | null, _fp, stdoutRing) => {
+      {},
+      undefined,
+      (err: Error | null, stdoutRing) => {
         if (err || !stdoutRing) {
           return callback(err);
         }
@@ -226,8 +227,9 @@ export default function (proto: Record<string, unknown>) {
 
     this._spawnFfmpeg(
       ["-filters"],
-      { captureStdout: true, stdoutLines: 0 },
-      (err, _fp, stdoutRing) => {
+      {},
+      undefined,
+      (err, stdoutRing) => {
         if (err || !stdoutRing) return callback(err);
         const stdout = stdoutRing.get();
         const lines = stdout.split("\n");
@@ -262,8 +264,9 @@ export default function (proto: Record<string, unknown>) {
 
     this._spawnFfmpeg(
       ["-codecs"],
-      { captureStdout: true, stdoutLines: 0 },
-      (err, _fp, stdoutRing) => {
+      {},
+      undefined,
+      (err, stdoutRing) => {
         if (err || !stdoutRing) return callback(err);
         const stdout = stdoutRing.get();
         const lines = stdout.split(lineBreakRegexp);
@@ -344,8 +347,9 @@ export default function (proto: Record<string, unknown>) {
 
     this._spawnFfmpeg(
       ["-encoders"],
-      { captureStdout: true, stdoutLines: 0 },
-      (err, _fp, stdoutRing) => {
+      {},
+      undefined,
+      (err, stdoutRing) => {
         if (err || !stdoutRing) return callback(err);
         const stdout = stdoutRing.get();
         const lines = stdout.split(lineBreakRegexp);
@@ -381,8 +385,9 @@ export default function (proto: Record<string, unknown>) {
 
     this._spawnFfmpeg(
       ["-formats"],
-      { captureStdout: true, stdoutLines: 0 },
-      (err, _fp, stdoutRing) => {
+      {},
+      undefined,
+      (err, stdoutRing) => {
         if (err || !stdoutRing) return callback(err);
         const stdout = stdoutRing.get();
         const lines = stdout.split(lineBreakRegexp);

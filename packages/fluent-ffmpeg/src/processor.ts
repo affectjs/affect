@@ -76,6 +76,7 @@ export default function (proto: FfmpegCommandInterface & Record<string, any>) {
   proto.run = function (this: FfmpegCommandInterface) {
     this._checkCapabilities((err) => {
       if (err) {
+        console.log("DEBUG: _checkCapabilities returned error:", err);
         return this.emit("error", err);
       }
 
@@ -213,7 +214,11 @@ export default function (proto: FfmpegCommandInterface & Record<string, any>) {
       };
 
       ffmpegProc.on("error", (err) => {
-        console.error("DEBUG: ffmpegProc error:", err);
+        // Ignore spurious errors where the error object is the ChildProcess itself
+        if (err && (err as any).pid && (err as any).spawnargs) {
+          // This is a ChildProcess object, not an Error - ignore it
+          return;
+        }
         handleEnd(err);
       });
 

@@ -2,6 +2,13 @@
 import fs from "fs";
 import os from "os";
 
+interface FfmpegError {
+  stack?: string;
+  ffmpegOut?: string;
+  ffmpegErr?: string;
+  spawnErr?: { stack?: string };
+}
+
 const TestHelpers = {
   getFfmpegCheck: function (): string {
     // First check FFMPEG_PATH environment variable
@@ -11,7 +18,7 @@ const TestHelpers = {
           // Return a command that will succeed (test -f)
           return 'test -f "' + process.env.FFMPEG_PATH + '"';
         }
-      } catch (e) {
+      } catch {
         // Fall through to default check
       }
     }
@@ -44,36 +51,48 @@ const TestHelpers = {
 
   logArgError: function (err: unknown) {
     if (err) {
-      console.log("got error: " + (err.stack || err));
-      if (err.ffmpegOut) {
+      const error = err as FfmpegError;
+      console.log("Error constructor: " + (err as any).constructor?.name);
+      try {
+        console.log("got error: " + (error.stack || JSON.stringify(error)));
+      } catch (e) {
+        console.log("got error (circular or unstringifiable): " + error);
+      }
+      if (error.ffmpegOut) {
         console.log("---stdout---");
-        console.log(err.ffmpegOut);
+        console.log(error.ffmpegOut);
       }
-      if (err.ffmpegErr) {
+      if (error.ffmpegErr) {
         console.log("---stderr---");
-        console.log(err.ffmpegErr);
+        console.log(error.ffmpegErr);
       }
-      if (err.spawnErr) {
+      if (error.spawnErr) {
         console.log("---spawn error---");
-        console.log(err.spawnErr.stack || err.spawnErr);
+        console.log(error.spawnErr.stack || error.spawnErr);
       }
     }
   },
 
   logError: function (err: unknown, stdout?: string, stderr?: string) {
     if (err) {
-      console.log("got error: " + (err.stack || err));
-      if (err.ffmpegOut) {
+      const error = err as FfmpegError;
+      console.log("Error constructor: " + (err as any).constructor?.name);
+      try {
+        console.log("got error: " + (error.stack || JSON.stringify(error)));
+      } catch (e) {
+        console.log("got error (circular or unstringifiable): " + error);
+      }
+      if (error.ffmpegOut) {
         console.log("---metadata stdout---");
-        console.log(err.ffmpegOut);
+        console.log(error.ffmpegOut);
       }
-      if (err.ffmpegErr) {
+      if (error.ffmpegErr) {
         console.log("---metadata stderr---");
-        console.log(err.ffmpegErr);
+        console.log(error.ffmpegErr);
       }
-      if (err.spawnErr) {
+      if (error.spawnErr) {
         console.log("---metadata spawn error---");
-        console.log(err.spawnErr.stack || err.spawnErr);
+        console.log(error.spawnErr.stack || error.spawnErr);
       }
       if (stdout) {
         console.log("---stdout---");
